@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kamus Zasha.online - ROOT SYSTEM</title>
+    <link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+
+<div id="terminal">
+    <div id="history"></div>
+    <div class="input-line">
+        <span class="prompt" id="prompt-text"></span>
+        <input type="password" id="cmdInput" autocomplete="off" autofocus spellcheck="false">
+    </div>
+</div>
+
+<div id="editor">
+    <div class="editor-header">Script Editor --- Dir: [<span id="edit-dir"></span>] --- Script: <span id="edit-keyword"></span></div>
+    <div class="system-msg">COMMAND: Tekan <b>CTRL + S</b> untuk Save/Compile. Tekan <b>ESC</b> untuk Abort.</div>
+    <textarea id="editor-textarea" spellcheck="false"></textarea>
+</div>
+
+<div id="hacker-footer">
+    <div id="footer-status">SYSTEM IDLE...</div>
+    <div id="footer-bar">[<span id="footer-progress">----------</span>] <span id="footer-percent">0%</span></div>
+</div>
+
+<!-- WAJIB type="module" untuk ES6 import -->
+<script type="module" src="app.js?v=1"></script>
+
+</body>
+</html>
