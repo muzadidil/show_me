@@ -4,189 +4,116 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Search :: Zasha.online</title>
+  <link rel="stylesheet" href="style.css">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      background: #030303;
-      color: #00ff00;
-      font-family: 'Courier New', Courier, monospace;
-      padding: 20px;
-      min-height: 100vh;
-      text-shadow: 0 0 5px #00ff00;
-      overflow-x: hidden;
+    .hk-body { overflow-y:auto; padding:16px; }
+    #search-header {
+      border-bottom:1px solid #003300; padding-bottom:10px; margin-bottom:16px;
+      display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;
     }
+    #search-header h1 { font-size:13px; color:#00aa00; text-shadow:none; font-weight:normal; }
+    #search-header nav a { color:#004400; text-decoration:none; font-size:12px; margin-left:12px; }
+    #search-header nav a:hover { color:#0f0; }
 
-    /* CRT scanline overlay */
-    body::after {
-      content: " ";
-      display: block;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background:
-        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-        linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06));
-      background-size: 100% 2px, 3px 100%;
-      z-index: 999;
-      pointer-events: none;
-    }
-
-    #app {
-      max-width: 1000px;
-      margin: 0 auto;
-      position: relative;
-      z-index: 2;
-    }
-
-    #app-header {
-      border-bottom: 1px solid #003300;
-      padding-bottom: 10px;
-      margin-bottom: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    #app-header h1 { font-size: 13px; color: #00aa00; text-shadow: none; font-weight: normal; }
-    #app-header nav a {
-      color: #004400;
-      text-decoration: none;
-      font-size: 12px;
-      margin-left: 12px;
-    }
-    #app-header nav a:hover { color: #00ff00; }
-
-    /* Search bar */
-    #search-form { display: flex; gap: 10px; margin-bottom: 12px; }
+    #search-form { display:flex; gap:10px; margin-bottom:12px; }
     #search-input {
-      flex: 1;
-      background: transparent;
-      border: 1px solid #004400;
-      color: #00ff00;
-      font-family: 'Courier New', monospace;
-      font-size: 15px;
-      padding: 8px 12px;
-      outline: none;
-      text-shadow: 0 0 5px #00ff00;
-      transition: border-color 0.15s;
+      flex:1; background:transparent; border:1px solid #004400;
+      color:#0f0; font-family:'Courier New',monospace; font-size:15px;
+      padding:8px 12px; outline:none;
+      text-shadow:0 0 5px rgba(0,255,0,.5); transition:border-color .15s;
     }
-    #search-input:focus   { border-color: #00ff00; }
-    #search-input::placeholder { color: #003300; text-shadow: none; }
-
+    #search-input:focus { border-color:#0f0; }
+    #search-input::placeholder { color:#003300; text-shadow:none; }
     #search-btn {
-      background: transparent;
-      border: 1px solid #00ff00;
-      color: #00ff00;
-      font-family: 'Courier New', monospace;
-      font-size: 13px;
-      padding: 8px 18px;
-      cursor: pointer;
-      white-space: nowrap;
+      background:transparent; border:1px solid #0f0; color:#0f0;
+      font-family:'Courier New',monospace; font-size:13px;
+      padding:8px 18px; cursor:pointer; white-space:nowrap;
     }
-    #search-btn:hover   { background: rgba(0,255,0,0.08); }
-    #search-btn:active  { background: rgba(0,255,0,0.15); }
-    #search-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    #search-btn:hover   { background:rgba(0,255,0,.08); }
+    #search-btn:active  { background:rgba(0,255,0,.15); }
+    #search-btn:disabled { opacity:.4; cursor:not-allowed; }
 
-    /* Status */
-    #status {
-      font-size: 12px;
-      margin-bottom: 12px;
-      min-height: 18px;
-      text-shadow: none;
+    #status { font-size:12px; margin-bottom:12px; min-height:18px; text-shadow:none; }
+    .s-loading { color:#ffaa00; }
+    .s-count   { color:#00aa00; }
+    .s-empty   { color:#005500; }
+    .s-error   { color:#ff3333; text-shadow:0 0 5px #ff3333; }
+
+    #table-wrap { overflow-x:auto; border:1px solid #002200; }
+    #table-wrap:empty { border:none; }
+    #search-table { width:100%; border-collapse:collapse; font-size:12px; }
+    #search-table thead th {
+      background:#001a00; color:#0f0; padding:7px 12px;
+      text-align:left; border-bottom:1px solid #0f0;
+      white-space:nowrap; position:sticky; top:0; text-shadow:none; font-weight:bold;
     }
-    .s-loading { color: #ffaa00; }
-    .s-count   { color: #00aa00; }
-    .s-empty   { color: #005500; }
-    .s-error   { color: #ff3333; text-shadow: 0 0 5px #ff3333; }
-
-    /* Table wrapper */
-    #table-wrap {
-      overflow-x: auto;
-      border: 1px solid #002200;
+    #search-table tbody td {
+      padding:6px 12px; border-bottom:1px solid #001200; color:#00cc00;
+      text-shadow:none; white-space:nowrap; max-width:280px;
+      overflow:hidden; text-overflow:ellipsis;
     }
-    #table-wrap:empty { border: none; }
-    #table-wrap::-webkit-scrollbar { height: 5px; }
-    #table-wrap::-webkit-scrollbar-track { background: #000; }
-    #table-wrap::-webkit-scrollbar-thumb { background: #003300; }
-
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-
-    thead th {
-      background: #001a00;
-      color: #00ff00;
-      padding: 7px 12px;
-      text-align: left;
-      border-bottom: 1px solid #00ff00;
-      white-space: nowrap;
-      position: sticky;
-      top: 0;
-      text-shadow: none;
-      font-weight: bold;
-    }
-
-    tbody td {
-      padding: 6px 12px;
-      border-bottom: 1px solid #001200;
-      color: #00cc00;
-      text-shadow: none;
-      white-space: nowrap;
-      max-width: 280px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    tbody tr:hover td { background: rgba(0,255,0,0.04); }
-    tbody tr:nth-child(even) td { background: rgba(0,255,0,0.015); }
+    #search-table tbody tr:hover td { background:rgba(0,255,0,.04); }
+    #search-table tbody tr:nth-child(even) td { background:rgba(0,255,0,.015); }
   </style>
 </head>
 <body>
-<div id="app">
 
-  <div id="app-header">
-    <h1>== SEARCH :: ZASHA.ONLINE ==</h1>
-    <nav>
-      <a href="index.html">KAMUS</a>
-      <a href="todo.html">TODO</a>
-      <a href="notes.html">NOTES</a>
-      <a href="excel.html">EXCEL</a>
-    </nav>
+<div class="hk-page">
+  <div class="hk-stage">
+    <canvas class="hk-rain" id="hkRain"></canvas>
+    <div class="hk-win">
+
+      <div class="hk-bar">
+        <span class="hk-dot" style="background:#ff5f56;box-shadow:0 0 4px #ff5f5680"></span>
+        <span class="hk-dot" style="background:#ffbd2e;box-shadow:0 0 4px #ffbd2e80"></span>
+        <span class="hk-dot" style="background:#27c93f;box-shadow:0 0 4px #27c93f80"></span>
+        <span class="bar-label">root@zasha.online: ~/search</span>
+        <span class="bar-right">&#x1F512; ENCRYPTED</span>
+      </div>
+
+      <div class="hk-body">
+        <div id="search-header">
+          <h1>== SEARCH :: ZASHA.ONLINE ==</h1>
+          <nav>
+            <a href="index.html">KAMUS</a>
+            <a href="todo.html">TODO</a>
+            <a href="notes.html">NOTES</a>
+            <a href="excel.html">EXCEL</a>
+          </nav>
+        </div>
+
+        <div id="search-form">
+          <input type="text" id="search-input" placeholder="ketik kata kunci, tekan Enter..."
+            autocomplete="off" spellcheck="false" autofocus>
+          <button id="search-btn">[SEARCH]</button>
+        </div>
+
+        <div id="status"></div>
+        <div id="table-wrap"></div>
+      </div>
+
+      <div class="hk-foot">
+        <span><span class="dot-live"></span><b>ONLINE</b></span>
+        <span>CPU <b id="hkCpu">--</b> &middot; MEM <b id="hkMem">--</b> &middot; PING <b id="hkPing">--</b></span>
+      </div>
+
+    </div>
+    <div class="hk-scan"></div>
   </div>
-
-  <div id="search-form">
-    <input
-      type="text"
-      id="search-input"
-      placeholder="ketik kata kunci, tekan Enter..."
-      autocomplete="off"
-      spellcheck="false"
-      autofocus
-    >
-    <button id="search-btn">[SEARCH]</button>
-  </div>
-
-  <div id="status"></div>
-  <div id="table-wrap"></div>
-
 </div>
 
 <script>
-  // ── Configuration ─────────────────────────────────────────────────────────
-  // TODO: Replace API_URL with your deployed Apps Script Web App URL.
-  // TODO: Token is visible in browser history — upgrade to proper auth for sensitive data.
   const API_URL   = 'https://script.google.com/macros/s/AKfycbx_qpzdVOuVyb4fvzLxsCLH-IzM1fJFPaNyqKLrhWPJFNCkp-5XXHoRRXcYNmtQXjK8XQ/exec';
-  const API_TOKEN = 'muzadidil'; // must match API_TOKEN in code.gs
+  const API_TOKEN = 'muzadidil';
 
-  // ── DOM refs ──────────────────────────────────────────────────────────────
   const searchInput = document.getElementById('search-input');
   const searchBtn   = document.getElementById('search-btn');
   const statusEl    = document.getElementById('status');
   const tableWrap   = document.getElementById('table-wrap');
 
-  // ── Event listeners ───────────────────────────────────────────────────────
   searchBtn.addEventListener('click', handleSearch);
   searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleSearch(); });
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
   async function handleSearch() {
     const q = searchInput.value.trim();
     if (!q) { setStatus('Masukkan kata kunci terlebih dahulu.', 'empty'); return; }
@@ -196,29 +123,15 @@
   async function runSearch(q) {
     setLoading(true);
     setStatus('> searching "' + q + '"...', 'loading');
-    clearTable();
-
-    const url = buildUrl(q);
-
+    tableWrap.innerHTML = '';
     try {
-      const res  = await fetch(url);
-      if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + res.statusText);
-
+      const res  = await fetch(API_URL + '?token=' + encodeURIComponent(API_TOKEN) + '&q=' + encodeURIComponent(q));
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       const json = await res.json();
-
-      if (json.error) {
-        setStatus('[' + json.error.toUpperCase() + '] ' + (json.message || ''), 'error');
-        return;
-      }
-
-      if (json.count === 0) {
-        setStatus('Tidak ada hasil untuk "' + q + '".', 'empty');
-        return;
-      }
-
+      if (json.error) { setStatus('[' + json.error.toUpperCase() + '] ' + (json.message || ''), 'error'); return; }
+      if (json.count === 0) { setStatus('Tidak ada hasil untuk "' + q + '".', 'empty'); return; }
       setStatus(json.count + ' baris ditemukan untuk "' + q + '".', 'count');
       renderTable(json.data);
-
     } catch (err) {
       setStatus('[ERROR] Gagal menghubungi API: ' + err.message, 'error');
     } finally {
@@ -226,59 +139,46 @@
     }
   }
 
-  // ── URL builder ───────────────────────────────────────────────────────────
-  function buildUrl(q) {
-    return API_URL
-      + '?token=' + encodeURIComponent(API_TOKEN)
-      + '&q='     + encodeURIComponent(q);
-  }
-
-  // ── Table renderer ────────────────────────────────────────────────────────
-  // Uses textContent only — never innerHTML — to prevent XSS.
   function renderTable(rows) {
     if (!rows.length) return;
-
     const headers = Object.keys(rows[0]);
     const table   = document.createElement('table');
-
-    // thead
-    const thead = table.createTHead();
-    const hrow  = thead.insertRow();
-    headers.forEach(h => {
-      const th       = document.createElement('th');
-      th.textContent = h;
-      hrow.appendChild(th);
-    });
-
-    // tbody
+    table.id = 'search-table';
+    const thead = table.createTHead(), hrow = thead.insertRow();
+    headers.forEach(h => { const th = document.createElement('th'); th.textContent = h; hrow.appendChild(th); });
     const tbody = table.createTBody();
     rows.forEach(row => {
       const tr = tbody.insertRow();
-      headers.forEach(h => {
-        const td       = tr.insertCell();
-        const val      = row[h];
-        td.textContent = (val !== undefined && val !== null) ? String(val) : '';
-      });
+      headers.forEach(h => { const td = tr.insertCell(); td.textContent = (row[h] !== undefined && row[h] !== null) ? String(row[h]) : ''; });
     });
-
     tableWrap.appendChild(table);
   }
 
-  // ── UI helpers ────────────────────────────────────────────────────────────
-  function setStatus(msg, type) {
-    statusEl.textContent = msg;
-    statusEl.className   = 's-' + (type || 'count');
-  }
-
-  function setLoading(on) {
-    searchBtn.disabled        = on;
-    searchInput.disabled      = on;
-    searchBtn.textContent     = on ? '[...]' : '[SEARCH]';
-  }
-
-  function clearTable() {
-    tableWrap.innerHTML = '';
-  }
+  function setStatus(msg, type) { statusEl.textContent = msg; statusEl.className = 's-' + (type || 'count'); }
+  function setLoading(on) { searchBtn.disabled = on; searchInput.disabled = on; searchBtn.textContent = on ? '[...]' : '[SEARCH]'; }
+</script>
+<script>
+(function(){
+  var cv=document.getElementById('hkRain'); if(!cv)return;
+  var ctx=cv.getContext('2d'),st=cv.parentElement,fs=14;
+  var chars='アイウエオカキクケコ0123456789ABCDEF!@#$%'.split('');
+  function resize(){cv.width=st.clientWidth;cv.height=st.clientHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var drops=Array.from({length:Math.floor(cv.width/fs)},function(){return Math.floor(Math.random()*-50);});
+  setInterval(function(){
+    ctx.fillStyle='rgba(2,4,2,0.08)';ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.fillStyle='#0f0';ctx.font=fs+'px monospace';
+    for(var i=0;i<drops.length;i++){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,drops[i]*fs);
+      if(drops[i]*fs>cv.height&&Math.random()>0.975)drops[i]=0;
+      drops[i]++;
+    }
+  },55);
+  function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+  var eC=document.getElementById('hkCpu'),eM=document.getElementById('hkMem'),eP=document.getElementById('hkPing');
+  function upd(){eC.textContent=(Math.random()*35+4).toFixed(1)+'%';eM.textContent=(Math.random()*25+38).toFixed(1)+'%';eP.textContent=rnd(6,48)+'ms';}
+  upd();setInterval(upd,900);
+})();
 </script>
 </body>
 </html>

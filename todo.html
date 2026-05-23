@@ -1,143 +1,144 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TODO :: Zasha Terminal</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        #lock-screen { max-width: 700px; margin: 40px auto; }
-        #app { max-width: 700px; margin: 0 auto; display: none; padding-bottom: 60px; }
-        #clock {
-            font-size: 3em;
-            text-align: center;
-            letter-spacing: 6px;
-            margin-bottom: 4px;
-            text-shadow: 0 0 20px #00ff00;
-        }
-        #date-display {
-            color: #00aa00;
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 0.9em;
-            text-shadow: none;
-            letter-spacing: 1px;
-        }
-        #todo-header {
-            color: #00aa00;
-            border-bottom: 1px solid #003300;
-            padding-bottom: 8px;
-            margin-bottom: 15px;
-            text-shadow: none;
-            font-size: 13px;
-        }
-        #todo-list { min-height: 40px; }
-        .todo-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            padding: 10px 5px;
-            border-bottom: 1px solid #001a00;
-        }
-        .todo-item:hover { background: rgba(0,255,0,0.04); }
-        .todo-check {
-            color: #00ff00;
-            font-weight: bold;
-            cursor: pointer;
-            white-space: nowrap;
-            user-select: none;
-            min-width: 32px;
-        }
-        .todo-text {
-            flex: 1;
-            white-space: pre-wrap;
-            word-break: break-word;
-            cursor: pointer;
-            line-height: 1.5;
-        }
-        .todo-text.done {
-            text-decoration: line-through;
-            color: #004400;
-            text-shadow: none;
-        }
-        .todo-del {
-            color: #ff3333;
-            cursor: pointer;
-            font-size: 11px;
-            opacity: 0;
-            transition: 0.15s;
-            user-select: none;
-            white-space: nowrap;
-            text-shadow: none;
-        }
-        .todo-item:hover .todo-del { opacity: 1; }
-        #add-bar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 20px;
-            border-top: 1px solid #003300;
-            padding-top: 12px;
-        }
-        #todo-input {
-            background: transparent;
-            border: none;
-            color: #00ff00;
-            font-family: 'Courier New', monospace;
-            font-size: 15px;
-            flex: 1;
-            outline: none;
-            caret-color: #00ff00;
-            text-shadow: 0 0 5px #00ff00;
-            padding: 4px 0;
-        }
-        #todo-input::placeholder { color: #003300; text-shadow: none; }
-        #empty-tasks { color: #003300; text-shadow: none; padding: 15px 5px; font-size: 13px; }
-        input[type="password"] {
-            background-color: transparent;
-            border: none;
-            color: #00ff00;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 16px;
-            flex-grow: 1;
-            outline: none;
-            caret-color: #00ff00;
-            text-shadow: 0 0 5px #00ff00;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TODO :: Zasha Terminal</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .hk-body { overflow-y:auto; padding:20px; }
+    #app { max-width:700px; margin:0 auto; display:none; padding-bottom:30px; }
+    #lock-screen { max-width:700px; }
+
+    #clock {
+      font-size:3em; text-align:center;
+      letter-spacing:6px; margin-bottom:4px;
+      text-shadow:0 0 20px #0f0;
+    }
+    #date-display {
+      color:#00aa00; text-align:center; margin-bottom:30px;
+      font-size:.9em; text-shadow:none; letter-spacing:1px;
+    }
+    #todo-header {
+      color:#00aa00; border-bottom:1px solid #003300;
+      padding-bottom:8px; margin-bottom:15px;
+      text-shadow:none; font-size:13px;
+    }
+    .todo-item {
+      display:flex; align-items:flex-start; gap:10px;
+      padding:10px 5px; border-bottom:1px solid #001a00;
+    }
+    .todo-item:hover { background:rgba(0,255,0,.04); }
+    .todo-check {
+      color:#0f0; font-weight:bold; cursor:pointer;
+      white-space:nowrap; user-select:none; min-width:32px;
+    }
+    .todo-text {
+      flex:1; white-space:pre-wrap; word-break:break-word;
+      cursor:pointer; line-height:1.5;
+    }
+    .todo-text.done { text-decoration:line-through; color:#004400; text-shadow:none; }
+    .todo-del {
+      color:#ff3333; cursor:pointer; font-size:11px; opacity:0;
+      transition:.15s; user-select:none; white-space:nowrap; text-shadow:none;
+    }
+    .todo-item:hover .todo-del { opacity:1; }
+    #add-bar {
+      display:flex; align-items:center; gap:10px;
+      margin-top:20px; border-top:1px solid #003300; padding-top:12px;
+    }
+    #todo-input {
+      background:transparent; border:none; color:#0f0;
+      font-family:'Courier New',monospace; font-size:15px;
+      flex:1; outline:none; caret-color:#0f0;
+      text-shadow:0 0 5px rgba(0,255,0,.5); padding:4px 0;
+    }
+    #todo-input::placeholder { color:#003300; text-shadow:none; }
+    #empty-tasks { color:#003300; text-shadow:none; padding:15px 5px; font-size:13px; }
+  </style>
 </head>
 <body>
 
-<div id="lock-screen">
-    <div class="error-msg">SYSTEM SECURED. ENTER PASSWORD TO ACCESS TODO MODULE.</div>
-    <br>
-    <div class="input-line">
-        <span class="prompt">password:</span>
-        <input type="password" id="pass-input" autocomplete="new-password" autofocus spellcheck="false">
-    </div>
-    <div id="lock-error" class="error-msg" style="margin-top:10px; display:none;">ACCESS DENIED.</div>
-</div>
+<div class="hk-page">
+  <div class="hk-stage">
+    <canvas class="hk-rain" id="hkRain"></canvas>
+    <div class="hk-win">
 
-<div id="app">
-    <div id="clock">00:00:00</div>
-    <div id="date-display">--</div>
+      <div class="hk-bar">
+        <span class="hk-dot" style="background:#ff5f56;box-shadow:0 0 4px #ff5f5680"></span>
+        <span class="hk-dot" style="background:#ffbd2e;box-shadow:0 0 4px #ffbd2e80"></span>
+        <span class="hk-dot" style="background:#27c93f;box-shadow:0 0 4px #27c93f80"></span>
+        <span class="bar-label">root@zasha.online: ~/todo</span>
+        <span class="bar-right">&#x1F512; SECURED</span>
+      </div>
 
-    <div id="todo-header">
-        == TODO LIST ==
-        [ <span id="count-pending">0</span> pending &nbsp;/&nbsp; <span id="count-done">0</span> selesai ]
-        &nbsp;&nbsp;<span style="color:#005500; font-size:11px;">goto: <a href="index.html" style="color:#005500; text-decoration:none;">kamus</a> | <a href="notes.html" style="color:#005500; text-decoration:none;">notes</a> | <a href="excel.html" style="color:#005500; text-decoration:none;">excel</a></span>
-    </div>
+      <div class="hk-body">
 
-    <div id="todo-list">
-        <div id="empty-tasks">Belum ada task. Ketik sesuatu di bawah dan tekan Enter.</div>
-    </div>
+        <div id="lock-screen">
+          <div class="error-msg">SYSTEM SECURED. ENTER PASSWORD TO ACCESS TODO MODULE.</div>
+          <br>
+          <div class="input-line">
+            <span class="prompt">password:</span>
+            <input type="password" id="pass-input" autocomplete="new-password" autofocus spellcheck="false">
+          </div>
+          <div id="lock-error" class="error-msg" style="margin-top:10px;display:none;">ACCESS DENIED.</div>
+        </div>
 
-    <div id="add-bar">
-        <span class="prompt">+&nbsp;</span>
-        <input type="text" id="todo-input" placeholder="tambah task baru, tekan Enter..." autocomplete="off" spellcheck="false">
+        <div id="app">
+          <div id="clock">00:00:00</div>
+          <div id="date-display">--</div>
+
+          <div id="todo-header">
+            == TODO LIST ==
+            [ <span id="count-pending">0</span> pending &nbsp;/&nbsp; <span id="count-done">0</span> selesai ]
+            &nbsp;&nbsp;<span style="color:#005500;font-size:11px;">goto: <a href="index.html" style="color:#005500;text-decoration:none;">kamus</a> | <a href="notes.html" style="color:#005500;text-decoration:none;">notes</a> | <a href="excel.html" style="color:#005500;text-decoration:none;">excel</a></span>
+          </div>
+
+          <div id="todo-list">
+            <div id="empty-tasks">Belum ada task. Ketik sesuatu di bawah dan tekan Enter.</div>
+          </div>
+
+          <div id="add-bar">
+            <span class="prompt">+&nbsp;</span>
+            <input type="text" id="todo-input" placeholder="tambah task baru, tekan Enter..." autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+
+      </div>
+
+      <div class="hk-foot">
+        <span><span class="dot-live"></span><b>ONLINE</b></span>
+        <span>CPU <b id="hkCpu">--</b> &middot; MEM <b id="hkMem">--</b> &middot; PING <b id="hkPing">--</b></span>
+      </div>
+
     </div>
+    <div class="hk-scan"></div>
+  </div>
 </div>
 
 <script type="module" src="todo.js"></script>
+<script>
+(function(){
+  var cv=document.getElementById('hkRain'); if(!cv)return;
+  var ctx=cv.getContext('2d'),st=cv.parentElement,fs=14;
+  var chars='アイウエオカキクケコ0123456789ABCDEF!@#$%'.split('');
+  function resize(){cv.width=st.clientWidth;cv.height=st.clientHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var drops=Array.from({length:Math.floor(cv.width/fs)},function(){return Math.floor(Math.random()*-50);});
+  setInterval(function(){
+    ctx.fillStyle='rgba(2,4,2,0.08)';ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.fillStyle='#0f0';ctx.font=fs+'px monospace';
+    for(var i=0;i<drops.length;i++){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,drops[i]*fs);
+      if(drops[i]*fs>cv.height&&Math.random()>0.975)drops[i]=0;
+      drops[i]++;
+    }
+  },55);
+  function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+  var eC=document.getElementById('hkCpu'),eM=document.getElementById('hkMem'),eP=document.getElementById('hkPing');
+  function upd(){eC.textContent=(Math.random()*35+4).toFixed(1)+'%';eM.textContent=(Math.random()*25+38).toFixed(1)+'%';eP.textContent=rnd(6,48)+'ms';}
+  upd();setInterval(upd,900);
+})();
+</script>
 </body>
 </html>

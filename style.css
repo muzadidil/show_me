@@ -1,82 +1,233 @@
-body {
-    background-color: #030303; 
-    color: #00ff00;
-    font-family: 'Courier New', Courier, monospace;
-    padding: 20px; 
-    margin: 0; 
-    overflow-x: hidden;
-    text-shadow: 0 0 5px #00ff00;
-}
-body::after {
-    content: " "; 
-    display: block; 
-    position: fixed;
-    top: 0; left: 0; bottom: 0; right: 0;
-    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-    z-index: 2; 
-    background-size: 100% 2px, 3px 100%; 
-    pointer-events: none;
-}
-#terminal, #editor { max-width: 900px; margin: 0 auto; position: relative; z-index: 3; }
-.output-line { margin-bottom: 10px; white-space: pre-wrap; line-height: 1.5; }
-.input-line { display: flex; align-items: center; margin-top: 10px; }
-.prompt { color: #00ff00; margin-right: 10px; font-weight: bold; white-space: nowrap; }
-input[type="text"] {
-    background-color: transparent; border: none; color: #00ff00;
-    font-family: 'Courier New', Courier, monospace; font-size: 16px;
-    flex-grow: 1; outline: none; caret-color: #00ff00; text-shadow: 0 0 5px #00ff00;
-}
-.error-msg { color: #ff3333; text-shadow: 0 0 5px #ff3333; }
-.system-msg { color: #00aa00; white-space: pre-wrap; text-shadow: none; }
-.ascii-art { color: #00ff00; font-weight: bold; }
+/* =============================================================================
+   style.css — Shared Hacker Terminal Theme — zasha.online
+============================================================================= */
 
-#editor { display: none; }
+@keyframes blink   { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+@keyframes flick   { 0%,95%{opacity:1} 96%,100%{opacity:.82} }
+@keyframes glitchT {
+  0%,90%,100%{transform:translate(0,0)}
+  92%{transform:translate(-2px,1px)}
+  94%{transform:translate(2px,-1px)}
+}
+@keyframes fadeIn  { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+html, body {
+  width:100%; height:100%;
+  background: #020402;
+  color: #00ff00;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  overflow-x: hidden;
+}
+
+/* ── Page wrapper (centered pages) ──────────────────────────────────────── */
+.hk-page {
+  max-width: 980px;
+  margin: 20px auto;
+  padding: 0 16px 20px;
+}
+
+/* ── Stage ───────────────────────────────────────────────────────────────── */
+.hk-stage {
+  position: relative;
+  background: #020402;
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 18px;
+  min-height: 560px;
+  animation: flick 6s infinite;
+}
+.hk-stage.hk-fullpage {
+  height: 100vh;
+  min-height: 0;
+  border-radius: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Matrix rain canvas ──────────────────────────────────────────────────── */
+.hk-rain {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: .28;
+  pointer-events: none;
+}
+
+/* ── CRT scanline overlay ────────────────────────────────────────────────── */
+.hk-scan {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(0,0,0,0) 50%, rgba(0,0,0,.28) 50%),
+    linear-gradient(90deg, rgba(255,0,0,.05), rgba(0,255,0,.02), rgba(0,0,255,.05));
+  background-size: 100% 3px, 4px 100%;
+  animation: flick 6s infinite;
+}
+
+/* ── Terminal window ─────────────────────────────────────────────────────── */
+.hk-win {
+  position: relative;
+  z-index: 3;
+  border: 1px solid #0f0;
+  border-radius: 6px;
+  background: rgba(2,8,2,.85);
+  box-shadow: 0 0 18px rgba(0,255,0,.25);
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+  overflow: hidden;
+}
+.hk-stage.hk-fullpage .hk-win {
+  flex: 1;
+  min-height: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ── Title bar ───────────────────────────────────────────────────────────── */
+.hk-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #001a00;
+  border-bottom: 1px solid #0f0;
+  color: #7CFC7C;
+  font-size: 12px;
+  text-shadow: 0 0 4px #0f0;
+  flex-shrink: 0;
+}
+.hk-dot    { width:11px; height:11px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.bar-label { margin-left:6px; letter-spacing:.5px; }
+.bar-right { margin-left:auto; color:#00bb00; font-size:11px; }
+
+/* ── Terminal body ───────────────────────────────────────────────────────── */
+.hk-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Footer / status bar ─────────────────────────────────────────────────── */
+.hk-foot {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #001200;
+  border-top: 1px solid #0f0;
+  color: #0a0;
+  font-size: 11.5px;
+  flex-shrink: 0;
+}
+.hk-foot b { color:#0f0; text-shadow:0 0 4px #0f0; }
+.dot-live {
+  display: inline-block;
+  width:6px; height:6px;
+  background:#0f0; border-radius:50%;
+  box-shadow:0 0 5px #0f0;
+  animation:blink 1.5s ease-in-out infinite;
+  margin-right:4px; vertical-align:middle;
+}
+
+/* ── Shared input styles ─────────────────────────────────────────────────── */
+input[type="text"], input[type="password"] {
+  background: transparent; border: none;
+  color: #0f0;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  flex: 1; outline: none;
+  caret-color: #0f0;
+  text-shadow: 0 0 5px rgba(0,255,0,.5);
+}
+input::placeholder { color:#003300; text-shadow:none; }
+
+::-webkit-scrollbar        { width:4px; height:4px; }
+::-webkit-scrollbar-track  { background:transparent; }
+::-webkit-scrollbar-thumb  { background:#003300; border-radius:2px; }
+
+/* ── Legacy classes (used by app.js) ─────────────────────────────────────── */
+.output-line { margin-bottom:8px; white-space:pre-wrap; line-height:1.5; animation:fadeIn .1s ease; }
+.input-line  { display:flex; align-items:center; margin-top:10px; }
+.prompt      { color:#7CFC7C; margin-right:10px; font-weight:bold; white-space:nowrap; text-shadow:0 0 6px #0f0; }
+.error-msg   { color:#ff3b3b; text-shadow:0 0 5px rgba(255,0,0,.6); }
+.system-msg  { color:#00aa00; white-space:pre-wrap; text-shadow:none; }
+.ascii-art   { color:#0f0; font-weight:bold; }
+
+#editor { display:none; }
 #editor-textarea {
-    width: 100%; height: 75vh; background-color: rgba(10, 10, 10, 0.8); color: #00ff00;
-    font-family: 'Courier New', Courier, monospace; font-size: 16px;
-    border: 1px solid #00ff00; padding: 15px; outline: none;
-    resize: vertical; margin-top: 15px; box-sizing: border-box; text-shadow: 0 0 3px #00ff00;
+  width:100%; height:72vh;
+  background:rgba(10,10,10,.9); color:#0f0;
+  font-family:'Courier New',Courier,monospace; font-size:15px;
+  border:1px solid #0f0; padding:15px; outline:none;
+  resize:vertical; box-sizing:border-box; margin-top:10px;
+  text-shadow:0 0 3px rgba(0,255,0,.4);
 }
-.editor-header {
-    background-color: #00ff00; color: #000; padding: 5px 10px; font-weight: bold; text-shadow: none;
-}
-
-/* --- FITUR BARU: ANIMASI FOOTER & TOMBOL COPY --- */
-#hacker-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background-color: #030303;
-    border-top: 1px solid #00ff00;
-    padding: 5px 15px;
-    font-size: 13px;
-    color: #00aa00;
-    z-index: 999;
-    display: none; /* Disembunyikan sebelum login */
-    justify-content: space-between;
-    box-sizing: border-box;
-    font-family: 'Courier New', Courier, monospace;
-}
-#footer-status { width: 50%; font-weight: bold; }
-#footer-bar { width: 50%; text-align: right; }
-#terminal { padding-bottom: 40px; /* Jarak agar text tidak tertutup footer */ }
-
+.editor-header { background:#0f0; color:#000; padding:5px 10px; font-weight:bold; text-shadow:none; }
+#hacker-footer { display:none !important; }
 .copy-btn {
-    background-color: #005500;
-    color: #00ff00;
-    border: 1px solid #00ff00;
-    font-size: 11px;
-    padding: 2px 6px;
-    margin-left: 5px;
-    cursor: pointer;
-    border-radius: 3px;
-    font-family: 'Courier New', Courier, monospace;
-    font-weight: bold;
-    transition: 0.2s;
+  background:#005500; color:#0f0; border:1px solid #0f0;
+  font-size:11px; padding:2px 6px; margin-left:5px;
+  cursor:pointer; border-radius:3px;
+  font-family:'Courier New',Courier,monospace; font-weight:bold;
+  transition:.2s; text-shadow:none;
 }
-.copy-btn:hover {
-    background-color: #00ff00;
-    color: #000;
+.copy-btn:hover { background:#0f0; color:#000; }
+
+/* ── Shared button style ─────────────────────────────────────────────────── */
+.btn-tool {
+  background:transparent; border:1px solid #004400; color:#007700;
+  font-family:'Courier New',monospace; font-size:11px;
+  padding:4px 10px; cursor:pointer; text-shadow:none; white-space:nowrap;
+}
+.btn-tool:hover  { border-color:#0f0; color:#0f0; }
+.btn-danger      { border-color:#440000; color:#880000; }
+.btn-danger:hover{ border-color:#ff3333; color:#ff3333; }
+
+/* ── Shared command bar (notes, excel) ───────────────────────────────────── */
+#cmd-bar {
+  border-top:1px solid #003300;
+  display:flex; align-items:center;
+  padding:8px 15px; gap:8px;
+  flex-shrink:0; background:rgba(2,8,2,.95);
+}
+#cmd-prompt {
+  color:#7CFC7C; font-weight:bold; white-space:nowrap;
+  font-family:'Courier New',monospace; font-size:14px;
+  text-shadow:0 0 6px #0f0;
+}
+#cmd-input {
+  flex:1; background:transparent; border:none; color:#0f0;
+  font-family:'Courier New',monospace; font-size:14px;
+  outline:none; caret-color:#0f0;
+  text-shadow:0 0 5px rgba(0,255,0,.5);
+}
+#cmd-input::placeholder { color:#003300; text-shadow:none; }
+#cmd-hint { color:#004400; font-size:11px; text-shadow:none; white-space:nowrap; }
+
+/* ── App header bar (notes, excel) ──────────────────────────────────────── */
+#app-header {
+  padding:8px 15px; border-bottom:1px solid #003300;
+  font-size:12px; color:#00aa00; text-shadow:none;
+  flex-shrink:0; display:flex; justify-content:space-between; align-items:center;
+}
+#app-header a { color:#004400; text-decoration:none; margin-left:10px; }
+#app-header a:hover { color:#0f0; }
+
+/* ── Lock screen ─────────────────────────────────────────────────────────── */
+#lock-screen { padding:30px; }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width:600px) {
+  .hk-page  { margin:6px auto; padding:0 4px 10px; }
+  .hk-stage { padding:8px; min-height:400px; }
+  #sidebar  { width:100%; border-right:none; border-bottom:1px solid #003300; max-height:180px; }
 }

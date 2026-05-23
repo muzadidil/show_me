@@ -1,293 +1,201 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EXCEL :: Zasha Terminal</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- SheetJS untuk parsing & generate Excel -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <style>
-        body { padding: 0; overflow: hidden; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EXCEL :: Zasha Terminal</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    body { margin:0; padding:0; overflow:hidden; }
 
-        #lock-screen { max-width: 700px; margin: 40px auto; padding: 20px; }
+    .hk-body { overflow:hidden; padding:0; }
+    #lock-screen { padding:30px; }
+    #app { display:none; flex:1; flex-direction:column; overflow:hidden; }
 
-        #app {
-            display: none;
-            height: 100vh;
-            flex-direction: column;
-            box-sizing: border-box;
-        }
+    #app-header { display:flex; justify-content:space-between; align-items:center; }
 
-        #app-header {
-            padding: 8px 15px;
-            border-bottom: 1px solid #003300;
-            font-size: 12px;
-            color: #005500;
-            text-shadow: none;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-        }
-        #app-header span { color: #00aa00; }
-        #app-header a { color: #004400; text-decoration: none; margin-left: 10px; }
-        #app-header a:hover { color: #00ff00; }
+    #layout { display:flex; flex:1; overflow:hidden; }
 
-        #layout { display: flex; flex: 1; overflow: hidden; }
+    /* Sidebar */
+    #sidebar {
+      width:210px; min-width:160px;
+      display:flex; flex-direction:column;
+      border-right:1px solid #003300; flex-shrink:0;
+    }
+    #sidebar-top {
+      padding:8px 12px; border-bottom:1px solid #003300;
+      font-size:12px; color:#00aa00; text-shadow:none; flex-shrink:0;
+    }
+    #files-list { flex:1; overflow-y:auto; }
+    .file-item { padding:9px 12px; cursor:pointer; border-bottom:1px solid #001a00; font-size:12px; }
+    .file-item:hover,.file-item.active { background:rgba(0,255,0,.06); }
+    .file-item .fi-name { color:#00cc00; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .file-item.active .fi-name { color:#0f0; }
+    .file-item .fi-meta { color:#003300; font-size:10px; margin-top:2px; text-shadow:none; }
+    #empty-files { color:#003300; font-size:12px; padding:12px; text-shadow:none; }
 
-        /* --- SIDEBAR --- */
-        #sidebar {
-            width: 210px;
-            min-width: 160px;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid #003300;
-            flex-shrink: 0;
-        }
-        #sidebar-top {
-            padding: 8px 12px;
-            border-bottom: 1px solid #003300;
-            font-size: 12px;
-            color: #00aa00;
-            text-shadow: none;
-            flex-shrink: 0;
-        }
-        #files-list { flex: 1; overflow-y: auto; }
-        #files-list::-webkit-scrollbar { width: 4px; }
-        #files-list::-webkit-scrollbar-thumb { background: #003300; }
+    /* Main area */
+    #main-area { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+    #toolbar {
+      padding:8px 15px; border-bottom:1px solid #003300;
+      display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex-shrink:0;
+    }
+    #file-label { color:#00aa00; font-size:13px; font-weight:bold; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    #row-info   { color:#004400; font-size:11px; text-shadow:none; white-space:nowrap; }
 
-        .file-item {
-            padding: 9px 12px;
-            cursor: pointer;
-            border-bottom: 1px solid #001a00;
-            font-size: 12px;
-        }
-        .file-item:hover, .file-item.active { background: rgba(0,255,0,0.06); }
-        .file-item .fi-name { color: #00cc00; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .file-item.active .fi-name { color: #00ff00; }
-        .file-item .fi-meta { color: #003300; font-size: 10px; margin-top: 2px; text-shadow: none; }
-        #empty-files { color: #003300; font-size: 12px; padding: 12px; text-shadow: none; }
+    #upload-zone {
+      flex:1; display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      color:#003300; text-shadow:none; gap:15px;
+    }
+    #upload-zone .ascii { font-size:12px; line-height:1.4; text-align:center; }
+    #upload-zone .hint  { font-size:12px; }
+    #drop-area {
+      border:1px dashed #004400; padding:30px 50px;
+      text-align:center; cursor:pointer; transition:.2s;
+    }
+    #drop-area:hover,#drop-area.dragover { border-color:#0f0; color:#0f0; background:rgba(0,255,0,.03); }
+    #file-input { display:none; }
 
-        /* --- MAIN AREA --- */
-        #main-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
+    #table-wrap { flex:1; overflow:auto; display:none; }
+    #data-table { border-collapse:collapse; font-size:12px; min-width:100%; }
+    #data-table th {
+      background:#001a00; color:#0f0; padding:6px 12px;
+      border:1px solid #003300; white-space:nowrap;
+      position:sticky; top:0; text-shadow:none; font-weight:bold;
+    }
+    #data-table td {
+      padding:5px 12px; border:1px solid #001a00; color:#00cc00;
+      white-space:nowrap; max-width:250px; overflow:hidden;
+      text-overflow:ellipsis; text-shadow:none;
+    }
+    #data-table tr:hover td { background:rgba(0,255,0,.04); }
+    #data-table tr:nth-child(even) td { background:rgba(0,255,0,.02); }
 
-        #toolbar {
-            padding: 8px 15px;
-            border-bottom: 1px solid #003300;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            flex-shrink: 0;
-        }
-        .btn-tool {
-            background: transparent;
-            border: 1px solid #004400;
-            color: #007700;
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
-            padding: 4px 10px;
-            cursor: pointer;
-            text-shadow: none;
-            white-space: nowrap;
-        }
-        .btn-tool:hover { border-color: #00ff00; color: #00ff00; }
-        .btn-danger { border-color: #440000; color: #880000; }
-        .btn-danger:hover { border-color: #ff3333; color: #ff3333; }
-        #file-label {
-            color: #00aa00;
-            font-size: 13px;
-            font-weight: bold;
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        #row-info { color: #004400; font-size: 11px; text-shadow: none; white-space: nowrap; }
+    #status-bar { padding:4px 15px; font-size:11px; color:#004400; text-shadow:none; border-top:1px solid #001a00; flex-shrink:0; }
 
-        #upload-zone {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #003300;
-            text-shadow: none;
-            gap: 15px;
-        }
-        #upload-zone .ascii { font-size: 12px; line-height: 1.4; text-align: center; }
-        #upload-zone .hint { font-size: 12px; }
-        #drop-area {
-            border: 1px dashed #004400;
-            padding: 30px 50px;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        #drop-area:hover, #drop-area.dragover {
-            border-color: #00ff00;
-            color: #00ff00;
-            background: rgba(0,255,0,0.03);
-        }
-        #file-input { display: none; }
-
-        #table-wrap {
-            flex: 1;
-            overflow: auto;
-            display: none;
-        }
-        #table-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
-        #table-wrap::-webkit-scrollbar-track { background: #000; }
-        #table-wrap::-webkit-scrollbar-thumb { background: #003300; }
-
-        #data-table {
-            border-collapse: collapse;
-            font-size: 12px;
-            min-width: 100%;
-        }
-        #data-table th {
-            background: #001a00;
-            color: #00ff00;
-            padding: 6px 12px;
-            border: 1px solid #003300;
-            white-space: nowrap;
-            position: sticky;
-            top: 0;
-            text-shadow: none;
-            font-weight: bold;
-        }
-        #data-table td {
-            padding: 5px 12px;
-            border: 1px solid #001a00;
-            color: #00cc00;
-            white-space: nowrap;
-            max-width: 250px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            text-shadow: none;
-        }
-        #data-table tr:hover td { background: rgba(0,255,0,0.04); }
-        #data-table tr:nth-child(even) td { background: rgba(0,255,0,0.02); }
-
-        #status-bar {
-            padding: 4px 15px;
-            font-size: 11px;
-            color: #004400;
-            text-shadow: none;
-            border-top: 1px solid #001a00;
-            flex-shrink: 0;
-        }
-        #cmd-bar {
-            border-top: 1px solid #003300;
-            display: flex;
-            align-items: center;
-            padding: 7px 15px;
-            gap: 8px;
-            flex-shrink: 0;
-            background: #030303;
-        }
-        #cmd-prompt { color: #00ff00; font-weight: bold; white-space: nowrap; font-family: 'Courier New', monospace; font-size: 14px; }
-        #cmd-input {
-            flex: 1;
-            background: transparent; border: none; color: #00ff00;
-            font-family: 'Courier New', monospace; font-size: 14px;
-            outline: none; caret-color: #00ff00; text-shadow: 0 0 5px #00ff00;
-        }
-        #cmd-input::placeholder { color: #003300; text-shadow: none; }
-
-        input[type="password"] {
-            background-color: transparent; border: none; color: #00ff00;
-            font-family: 'Courier New', Courier, monospace; font-size: 16px;
-            flex-grow: 1; outline: none; caret-color: #00ff00; text-shadow: 0 0 5px #00ff00;
-        }
-
-        @media (max-width: 600px) {
-            body { overflow: auto; }
-            #app { height: auto; }
-            #layout { flex-direction: column; }
-            #sidebar { width: 100%; border-right: none; border-bottom: 1px solid #003300; max-height: 160px; }
-        }
-    </style>
+    @media (max-width:600px) {
+      #layout { flex-direction:column; }
+      #sidebar { width:100%; border-right:none; border-bottom:1px solid #003300; max-height:160px; }
+    }
+  </style>
 </head>
 <body>
 
-<div id="lock-screen">
-    <div class="error-msg">SYSTEM SECURED. ENTER PASSWORD TO ACCESS EXCEL MODULE.</div>
-    <br>
-    <div class="input-line">
-        <span class="prompt">password:</span>
-        <input type="password" id="pass-input" autocomplete="new-password" autofocus spellcheck="false">
-    </div>
-    <div id="lock-error" class="error-msg" style="margin-top:10px; display:none;">ACCESS DENIED.</div>
-</div>
+<div class="hk-stage hk-fullpage">
+  <canvas class="hk-rain" id="hkRain"></canvas>
+  <div class="hk-win">
 
-<div id="app">
-    <div id="app-header">
-        <span>== EXCEL MODULE == &nbsp; Upload .xlsx / .csv — Simpan & Download</span>
-        <div>
+    <div class="hk-bar">
+      <span class="hk-dot" style="background:#ff5f56;box-shadow:0 0 4px #ff5f5680"></span>
+      <span class="hk-dot" style="background:#ffbd2e;box-shadow:0 0 4px #ffbd2e80"></span>
+      <span class="hk-dot" style="background:#27c93f;box-shadow:0 0 4px #27c93f80"></span>
+      <span class="bar-label">root@zasha.online: ~/excel</span>
+      <span class="bar-right">&#x1F512; SECURED</span>
+    </div>
+
+    <div class="hk-body">
+
+      <div id="lock-screen">
+        <div class="error-msg">SYSTEM SECURED. ENTER PASSWORD TO ACCESS EXCEL MODULE.</div>
+        <br>
+        <div class="input-line">
+          <span class="prompt">password:</span>
+          <input type="password" id="pass-input" autocomplete="new-password" autofocus spellcheck="false">
+        </div>
+        <div id="lock-error" class="error-msg" style="margin-top:10px;display:none;">ACCESS DENIED.</div>
+      </div>
+
+      <div id="app">
+        <div id="app-header">
+          <span>== EXCEL MODULE == &nbsp; Upload .xlsx / .csv — Simpan &amp; Download</span>
+          <div>
             <a href="index.html">KAMUS</a>
             <a href="todo.html">TODO</a>
             <a href="notes.html">NOTES</a>
+          </div>
         </div>
-    </div>
 
-    <div id="layout">
-        <!-- Sidebar: saved files -->
-        <div id="sidebar">
+        <div id="layout">
+          <div id="sidebar">
             <div id="sidebar-top">[ <span id="file-count">0</span> tersimpan ]</div>
             <div id="files-list">
-                <div id="empty-files">Belum ada file tersimpan.</div>
+              <div id="empty-files">Belum ada file tersimpan.</div>
             </div>
-        </div>
+          </div>
 
-        <!-- Main area -->
-        <div id="main-area">
+          <div id="main-area">
             <div id="toolbar">
-                <span id="file-label">-- tidak ada file --</span>
-                <span id="row-info"></span>
-                <button class="btn-tool" id="btn-upload-new">[+] UPLOAD</button>
-                <button class="btn-tool" id="btn-save-db" style="display:none;">[SAVE] SIMPAN</button>
-                <button class="btn-tool" id="btn-dl-xlsx" style="display:none;">[↓] XLSX</button>
-                <button class="btn-tool" id="btn-dl-csv" style="display:none;">[↓] CSV</button>
-                <button class="btn-tool btn-danger" id="btn-del-db" style="display:none;">[DEL]</button>
+              <span id="file-label">-- tidak ada file --</span>
+              <span id="row-info"></span>
+              <button class="btn-tool" id="btn-upload-new">[+] UPLOAD</button>
+              <button class="btn-tool" id="btn-save-db" style="display:none;">[SAVE] SIMPAN</button>
+              <button class="btn-tool" id="btn-dl-xlsx" style="display:none;">[↓] XLSX</button>
+              <button class="btn-tool" id="btn-dl-csv" style="display:none;">[↓] CSV</button>
+              <button class="btn-tool btn-danger" id="btn-del-db" style="display:none;">[DEL]</button>
             </div>
 
-            <!-- Upload zone -->
             <div id="upload-zone">
-                <div class="ascii">
+              <div class="ascii">
 ╔══════════════════════════════╗<br>
 ║   EXCEL / CSV UPLOAD ZONE    ║<br>
 ╚══════════════════════════════╝
-                </div>
-                <div id="drop-area" onclick="document.getElementById('file-input').click()">
-                    Klik di sini atau drop file .xlsx / .csv
-                </div>
-                <div class="hint">Max ~500 baris untuk penyimpanan Firestore</div>
-                <input type="file" id="file-input" accept=".xlsx,.xls,.csv">
+              </div>
+              <div id="drop-area" onclick="document.getElementById('file-input').click()">
+                Klik di sini atau drop file .xlsx / .csv
+              </div>
+              <div class="hint">Max ~500 baris untuk penyimpanan Firestore</div>
+              <input type="file" id="file-input" accept=".xlsx,.xls,.csv">
             </div>
 
-            <!-- Table -->
             <div id="table-wrap">
-                <table id="data-table"></table>
+              <table id="data-table"></table>
             </div>
-
             <div id="status-bar">--</div>
+          </div>
         </div>
+
+        <div id="cmd-bar">
+          <span id="cmd-prompt">root@zasha:~/excel$</span>
+          <input type="text" id="cmd-input" autocomplete="off" spellcheck="false" placeholder="goto kamus | todo | notes | exit">
+        </div>
+      </div>
+
     </div>
 
-    <!-- Command bar -->
-    <div id="cmd-bar">
-        <span id="cmd-prompt">root@zasha:~/excel$</span>
-        <input type="text" id="cmd-input" autocomplete="off" spellcheck="false" placeholder="goto kamus | todo | notes | exit">
+    <div class="hk-foot">
+      <span><span class="dot-live"></span><b>ONLINE</b></span>
+      <span>CPU <b id="hkCpu">--</b> &middot; MEM <b id="hkMem">--</b> &middot; PING <b id="hkPing">--</b></span>
     </div>
+
+  </div>
+  <div class="hk-scan"></div>
 </div>
 
 <script type="module" src="excel.js"></script>
+<script>
+(function(){
+  var cv=document.getElementById('hkRain'); if(!cv)return;
+  var ctx=cv.getContext('2d'),st=cv.parentElement,fs=14;
+  var chars='アイウエオカキクケコ0123456789ABCDEF!@#$%'.split('');
+  function resize(){cv.width=st.clientWidth;cv.height=st.clientHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var drops=Array.from({length:Math.floor(cv.width/fs)},function(){return Math.floor(Math.random()*-50);});
+  setInterval(function(){
+    ctx.fillStyle='rgba(2,4,2,0.08)';ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.fillStyle='#0f0';ctx.font=fs+'px monospace';
+    for(var i=0;i<drops.length;i++){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,drops[i]*fs);
+      if(drops[i]*fs>cv.height&&Math.random()>0.975)drops[i]=0;
+      drops[i]++;
+    }
+  },55);
+  function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+  var eC=document.getElementById('hkCpu'),eM=document.getElementById('hkMem'),eP=document.getElementById('hkPing');
+  function upd(){eC.textContent=(Math.random()*35+4).toFixed(1)+'%';eM.textContent=(Math.random()*25+38).toFixed(1)+'%';eP.textContent=rnd(6,48)+'ms';}
+  upd();setInterval(upd,900);
+})();
+</script>
 </body>
 </html>

@@ -1,254 +1,174 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NOTES :: Zasha Terminal</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        body { padding: 0; overflow: hidden; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NOTES :: Zasha Terminal</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { margin:0; padding:0; overflow:hidden; }
 
-        #lock-screen { max-width: 700px; margin: 40px auto; padding: 20px; }
+    .hk-body { overflow:hidden; padding:0; }
+    #lock-screen { padding:30px; }
+    #app { display:none; flex:1; flex-direction:column; overflow:hidden; }
 
-        #app {
-            display: none;
-            height: 100vh;
-            flex-direction: column;
-            box-sizing: border-box;
-        }
+    #app-header {
+      padding:8px 15px; border-bottom:1px solid #003300;
+      font-size:12px; color:#00aa00; text-shadow:none;
+      flex-shrink:0;
+    }
+    #layout { display:flex; flex:1; overflow:hidden; }
 
-        #app-header {
-            padding: 8px 15px;
-            border-bottom: 1px solid #003300;
-            font-size: 12px;
-            color: #00aa00;
-            text-shadow: none;
-            flex-shrink: 0;
-        }
+    /* Sidebar */
+    #sidebar {
+      width:220px; min-width:180px;
+      display:flex; flex-direction:column;
+      border-right:1px solid #003300; flex-shrink:0;
+    }
+    #sidebar-top {
+      padding:8px 12px; border-bottom:1px solid #003300;
+      font-size:12px; color:#00aa00; text-shadow:none; flex-shrink:0;
+    }
+    #notes-list { flex:1; overflow-y:auto; }
+    .note-item { padding:10px 12px; border-bottom:1px solid #001a00; cursor:default; }
+    .note-item.active { background:rgba(0,255,0,.08); }
+    .note-item .ni-title {
+      font-size:13px; white-space:nowrap; overflow:hidden;
+      text-overflow:ellipsis; color:#00cc00;
+    }
+    .note-item.active .ni-title { color:#0f0; }
+    .note-item .ni-date { font-size:10px; color:#003300; margin-top:2px; text-shadow:none; }
 
-        #layout {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
+    /* Editor panel */
+    #editor-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+    #editor-toolbar {
+      padding:8px 15px; border-bottom:1px solid #003300;
+      display:flex; align-items:center; gap:8px; flex-shrink:0;
+    }
+    #note-title-input {
+      flex:1; background:transparent; border:none; color:#0f0;
+      font-family:'Courier New',monospace; font-size:15px;
+      font-weight:bold; outline:none; caret-color:#0f0;
+      text-shadow:0 0 5px rgba(0,255,0,.5);
+    }
+    #note-title-input::placeholder { color:#003300; text-shadow:none; }
+    #note-content-input {
+      flex:1; background:transparent; border:none; color:#0f0;
+      font-family:'Courier New',monospace; font-size:14px;
+      padding:15px; outline:none; resize:none; line-height:1.7;
+      text-shadow:0 0 3px rgba(0,255,0,.4); overflow-y:auto;
+    }
+    #note-content-input::placeholder { color:#003300; text-shadow:none; }
+    #empty-editor {
+      flex:1; display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      color:#003300; text-shadow:none; font-size:12px; gap:6px; line-height:1.8;
+    }
 
-        /* --- SIDEBAR --- */
-        #sidebar {
-            width: 220px;
-            min-width: 180px;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid #003300;
-            flex-shrink: 0;
-        }
-        #sidebar-top {
-            padding: 8px 12px;
-            border-bottom: 1px solid #003300;
-            font-size: 12px;
-            color: #00aa00;
-            text-shadow: none;
-            flex-shrink: 0;
-        }
-        #notes-list { flex: 1; overflow-y: auto; }
-        #notes-list::-webkit-scrollbar { width: 4px; }
-        #notes-list::-webkit-scrollbar-thumb { background: #003300; }
-
-        .note-item {
-            padding: 10px 12px;
-            border-bottom: 1px solid #001a00;
-            cursor: default;
-        }
-        .note-item.active { background: rgba(0,255,0,0.08); }
-        .note-item .ni-title {
-            font-size: 13px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            color: #00cc00;
-        }
-        .note-item.active .ni-title { color: #00ff00; }
-        .note-item .ni-date {
-            font-size: 10px;
-            color: #003300;
-            margin-top: 2px;
-            text-shadow: none;
-        }
-
-        /* --- EDITOR --- */
-        #editor-panel {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        #editor-toolbar {
-            padding: 8px 15px;
-            border-bottom: 1px solid #003300;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-        #note-title-input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: #00ff00;
-            font-family: 'Courier New', monospace;
-            font-size: 15px;
-            font-weight: bold;
-            outline: none;
-            caret-color: #00ff00;
-            text-shadow: 0 0 5px #00ff00;
-        }
-        #note-title-input::placeholder { color: #003300; text-shadow: none; }
-        .btn-tool {
-            background: transparent;
-            border: 1px solid #004400;
-            color: #007700;
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
-            padding: 3px 8px;
-            cursor: pointer;
-            text-shadow: none;
-        }
-        .btn-tool:hover { border-color: #00ff00; color: #00ff00; }
-
-        #note-content-input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: #00ff00;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            padding: 15px;
-            outline: none;
-            resize: none;
-            line-height: 1.7;
-            text-shadow: 0 0 3px rgba(0,255,0,0.4);
-            overflow-y: auto;
-        }
-        #note-content-input::placeholder { color: #003300; text-shadow: none; }
-        #note-content-input::-webkit-scrollbar { width: 4px; }
-        #note-content-input::-webkit-scrollbar-thumb { background: #003300; }
-
-        #empty-editor {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #003300;
-            text-shadow: none;
-            font-size: 12px;
-            gap: 6px;
-            line-height: 1.8;
-        }
-
-        /* --- COMMAND BAR --- */
-        #cmd-bar {
-            border-top: 1px solid #003300;
-            display: flex;
-            align-items: center;
-            padding: 8px 15px;
-            gap: 8px;
-            flex-shrink: 0;
-            background: #030303;
-        }
-        #cmd-prompt {
-            color: #00ff00;
-            font-weight: bold;
-            white-space: nowrap;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-        }
-        #cmd-input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: #00ff00;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            outline: none;
-            caret-color: #00ff00;
-            text-shadow: 0 0 5px #00ff00;
-        }
-        #cmd-input::placeholder { color: #003300; text-shadow: none; }
-        #cmd-hint {
-            color: #004400;
-            font-size: 11px;
-            text-shadow: none;
-            white-space: nowrap;
-        }
-
-        input[type="password"] {
-            background-color: transparent; border: none; color: #00ff00;
-            font-family: 'Courier New', Courier, monospace; font-size: 16px;
-            flex-grow: 1; outline: none; caret-color: #00ff00; text-shadow: 0 0 5px #00ff00;
-        }
-
-        @media (max-width: 600px) {
-            body { overflow: auto; }
-            #app { height: auto; }
-            #layout { flex-direction: column; }
-            #sidebar { width: 100%; border-right: none; border-bottom: 1px solid #003300; max-height: 180px; }
-            #note-content-input { min-height: 40vh; }
-        }
-    </style>
+    @media (max-width:600px) {
+      #layout { flex-direction:column; }
+      #sidebar { width:100%; border-right:none; border-bottom:1px solid #003300; max-height:180px; }
+      #note-content-input { min-height:40vh; }
+    }
+  </style>
 </head>
 <body>
 
-<div id="lock-screen">
-    <div class="error-msg">SYSTEM SECURED. ENTER PASSWORD TO ACCESS NOTES MODULE.</div>
-    <br>
-    <div class="input-line">
-        <span class="prompt">password:</span>
-        <input type="password" id="pass-input" autocomplete="new-password" autofocus spellcheck="false">
-    </div>
-    <div id="lock-error" class="error-msg" style="margin-top:10px; display:none;">ACCESS DENIED.</div>
-</div>
+<div class="hk-stage hk-fullpage">
+  <canvas class="hk-rain" id="hkRain"></canvas>
+  <div class="hk-win">
 
-<div id="app">
-    <div id="app-header">
-        == NOTES MODULE == &nbsp;|&nbsp; CTRL+S simpan &nbsp;|&nbsp; ESC tutup editor &nbsp;|&nbsp;
-        <span style="color:#005500;">goto kamus | todo | excel &nbsp;·&nbsp; add &lt;judul&gt; &nbsp;·&nbsp; rm &lt;judul&gt; &nbsp;·&nbsp; ls &nbsp;·&nbsp; exit</span>
+    <div class="hk-bar">
+      <span class="hk-dot" style="background:#ff5f56;box-shadow:0 0 4px #ff5f5680"></span>
+      <span class="hk-dot" style="background:#ffbd2e;box-shadow:0 0 4px #ffbd2e80"></span>
+      <span class="hk-dot" style="background:#27c93f;box-shadow:0 0 4px #27c93f80"></span>
+      <span class="bar-label">root@zasha.online: ~/notes</span>
+      <span class="bar-right">&#x1F512; SECURED</span>
     </div>
 
-    <div id="layout">
-        <!-- Sidebar -->
-        <div id="sidebar">
+    <div class="hk-body">
+
+      <div id="lock-screen">
+        <div class="error-msg">SYSTEM SECURED. ENTER PASSWORD TO ACCESS NOTES MODULE.</div>
+        <br>
+        <div class="input-line">
+          <span class="prompt">password:</span>
+          <input type="password" id="pass-input" autocomplete="new-password" autofocus spellcheck="false">
+        </div>
+        <div id="lock-error" class="error-msg" style="margin-top:10px;display:none;">ACCESS DENIED.</div>
+      </div>
+
+      <div id="app">
+        <div id="app-header">
+          == NOTES MODULE == &nbsp;|&nbsp; CTRL+S simpan &nbsp;|&nbsp; ESC tutup editor &nbsp;|&nbsp;
+          <span style="color:#005500;">goto kamus | todo | excel &nbsp;·&nbsp; add &lt;judul&gt; &nbsp;·&nbsp; rm &lt;judul&gt; &nbsp;·&nbsp; ls &nbsp;·&nbsp; exit</span>
+        </div>
+
+        <div id="layout">
+          <div id="sidebar">
             <div id="sidebar-top">[ <span id="note-count">0</span> notes ]</div>
             <div id="notes-list"></div>
-        </div>
+          </div>
 
-        <!-- Editor panel -->
-        <div id="editor-panel">
+          <div id="editor-panel">
             <div id="empty-editor">
-                <span>Ketik nama note untuk membuka</span>
-                <span style="color:#002200;">add &lt;judul&gt; — buat baru</span>
-                <span style="color:#002200;">ls — daftar semua note</span>
-                <span style="color:#002200;">rm &lt;judul&gt; — hapus</span>
-                <span style="color:#002200;">goto kamus / todo / excel</span>
+              <span>Ketik nama note untuk membuka</span>
+              <span style="color:#002200;">add &lt;judul&gt; — buat baru</span>
+              <span style="color:#002200;">ls — daftar semua note</span>
+              <span style="color:#002200;">rm &lt;judul&gt; — hapus</span>
+              <span style="color:#002200;">goto kamus / todo / excel</span>
             </div>
-
-            <div id="editor-form" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
-                <div id="editor-toolbar">
-                    <input type="text" id="note-title-input" placeholder="Judul..." autocomplete="off" spellcheck="false">
-                    <button class="btn-tool" id="btn-save">[CTRL+S]</button>
-                </div>
-                <textarea id="note-content-input" placeholder="Isi catatan..." spellcheck="false"></textarea>
+            <div id="editor-form" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
+              <div id="editor-toolbar">
+                <input type="text" id="note-title-input" placeholder="Judul..." autocomplete="off" spellcheck="false">
+                <button class="btn-tool" id="btn-save">[CTRL+S]</button>
+              </div>
+              <textarea id="note-content-input" placeholder="Isi catatan..." spellcheck="false"></textarea>
             </div>
+          </div>
         </div>
+
+        <div id="cmd-bar">
+          <span id="cmd-prompt">root@zasha:~/notes$</span>
+          <input type="text" id="cmd-input" autocomplete="off" spellcheck="false" placeholder="ketik perintah...">
+          <span id="cmd-hint"></span>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Command bar -->
-    <div id="cmd-bar">
-        <span id="cmd-prompt">root@zasha:~/notes$</span>
-        <input type="text" id="cmd-input" autocomplete="off" spellcheck="false" placeholder="ketik perintah...">
-        <span id="cmd-hint"></span>
+    <div class="hk-foot">
+      <span><span class="dot-live"></span><b>ONLINE</b></span>
+      <span>CPU <b id="hkCpu">--</b> &middot; MEM <b id="hkMem">--</b> &middot; PING <b id="hkPing">--</b></span>
     </div>
+
+  </div>
+  <div class="hk-scan"></div>
 </div>
 
 <script type="module" src="notes.js"></script>
+<script>
+(function(){
+  var cv=document.getElementById('hkRain'); if(!cv)return;
+  var ctx=cv.getContext('2d'),st=cv.parentElement,fs=14;
+  var chars='アイウエオカキクケコ0123456789ABCDEF!@#$%'.split('');
+  function resize(){cv.width=st.clientWidth;cv.height=st.clientHeight;}
+  resize(); window.addEventListener('resize',resize);
+  var drops=Array.from({length:Math.floor(cv.width/fs)},function(){return Math.floor(Math.random()*-50);});
+  setInterval(function(){
+    ctx.fillStyle='rgba(2,4,2,0.08)';ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.fillStyle='#0f0';ctx.font=fs+'px monospace';
+    for(var i=0;i<drops.length;i++){
+      ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*fs,drops[i]*fs);
+      if(drops[i]*fs>cv.height&&Math.random()>0.975)drops[i]=0;
+      drops[i]++;
+    }
+  },55);
+  function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+  var eC=document.getElementById('hkCpu'),eM=document.getElementById('hkMem'),eP=document.getElementById('hkPing');
+  function upd(){eC.textContent=(Math.random()*35+4).toFixed(1)+'%';eM.textContent=(Math.random()*25+38).toFixed(1)+'%';eP.textContent=rnd(6,48)+'ms';}
+  upd();setInterval(upd,900);
+})();
+</script>
 </body>
 </html>
