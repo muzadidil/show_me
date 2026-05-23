@@ -7,7 +7,7 @@ import {
 
 const PASSWORD     = 'zasha';
 const PAGES        = { kamus: 'index.html', todo: 'todo.html', notes: 'notes.html' };
-const DEFAULT_COLS = ['Tanggal', 'Keterangan', 'Nominal'];
+const DEFAULT_COLS = ['Tanggal', 'Keterangan', 'Rupiah'];
 
 // DOM
 const lockScreen  = document.getElementById('lock-screen');
@@ -215,7 +215,7 @@ function updateSumHeader() {
 }
 
 function formatSum(val) {
-    return 'Σ ' + val.toLocaleString('id-ID', { maximumFractionDigits: 2 });
+    return 'Rp ' + val.toLocaleString('id-ID', { maximumFractionDigits: 0 });
 }
 
 function updateInfo() {
