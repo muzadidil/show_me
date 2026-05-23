@@ -18,19 +18,13 @@
         }
 
         #app-header {
-            padding: 10px 15px;
+            padding: 8px 15px;
             border-bottom: 1px solid #003300;
             font-size: 12px;
-            color: #005500;
+            color: #00aa00;
             text-shadow: none;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             flex-shrink: 0;
         }
-        #app-header span { color: #00aa00; }
-        #app-header a { color: #004400; text-decoration: none; margin-left: 10px; }
-        #app-header a:hover { color: #00ff00; }
 
         #layout {
             display: flex;
@@ -48,39 +42,23 @@
             flex-shrink: 0;
         }
         #sidebar-top {
-            padding: 10px 12px;
+            padding: 8px 12px;
             border-bottom: 1px solid #003300;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            font-size: 12px;
+            color: #00aa00;
+            text-shadow: none;
             flex-shrink: 0;
         }
-        #sidebar-top span { color: #00aa00; font-size: 12px; text-shadow: none; }
-        #btn-new {
-            background: transparent;
-            border: 1px solid #005500;
-            color: #00aa00;
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
-            padding: 3px 8px;
-            cursor: pointer;
-        }
-        #btn-new:hover { border-color: #00ff00; color: #00ff00; }
-
-        #notes-list {
-            flex: 1;
-            overflow-y: auto;
-        }
+        #notes-list { flex: 1; overflow-y: auto; }
         #notes-list::-webkit-scrollbar { width: 4px; }
-        #notes-list::-webkit-scrollbar-track { background: #000; }
         #notes-list::-webkit-scrollbar-thumb { background: #003300; }
 
         .note-item {
             padding: 10px 12px;
-            cursor: pointer;
             border-bottom: 1px solid #001a00;
+            cursor: default;
         }
-        .note-item:hover, .note-item.active { background: rgba(0,255,0,0.06); }
+        .note-item.active { background: rgba(0,255,0,0.08); }
         .note-item .ni-title {
             font-size: 13px;
             white-space: nowrap;
@@ -89,22 +67,12 @@
             color: #00cc00;
         }
         .note-item.active .ni-title { color: #00ff00; }
-        .note-item .ni-preview {
-            font-size: 11px;
-            color: #004400;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-top: 2px;
-            text-shadow: none;
-        }
         .note-item .ni-date {
             font-size: 10px;
             color: #003300;
-            margin-top: 3px;
+            margin-top: 2px;
             text-shadow: none;
         }
-        #empty-list { color: #003300; font-size: 12px; padding: 15px 12px; text-shadow: none; }
 
         /* --- EDITOR --- */
         #editor-panel {
@@ -113,7 +81,6 @@
             flex-direction: column;
             overflow: hidden;
         }
-
         #editor-toolbar {
             padding: 8px 15px;
             border-bottom: 1px solid #003300;
@@ -143,12 +110,9 @@
             font-size: 11px;
             padding: 3px 8px;
             cursor: pointer;
-            white-space: nowrap;
             text-shadow: none;
         }
         .btn-tool:hover { border-color: #00ff00; color: #00ff00; }
-        .btn-del-note { border-color: #440000; color: #880000; }
-        .btn-del-note:hover { border-color: #ff3333; color: #ff3333; }
 
         #note-content-input {
             flex: 1;
@@ -166,48 +130,69 @@
         }
         #note-content-input::placeholder { color: #003300; text-shadow: none; }
         #note-content-input::-webkit-scrollbar { width: 4px; }
-        #note-content-input::-webkit-scrollbar-track { background: #000; }
         #note-content-input::-webkit-scrollbar-thumb { background: #003300; }
-
-        #editor-status {
-            padding: 4px 15px;
-            font-size: 11px;
-            color: #004400;
-            text-shadow: none;
-            border-top: 1px solid #001a00;
-            flex-shrink: 0;
-        }
 
         #empty-editor {
             flex: 1;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             color: #003300;
             text-shadow: none;
-            font-size: 13px;
+            font-size: 12px;
+            gap: 6px;
+            line-height: 1.8;
         }
 
-        /* Password input override */
-        input[type="password"] {
-            background-color: transparent;
+        /* --- COMMAND BAR --- */
+        #cmd-bar {
+            border-top: 1px solid #003300;
+            display: flex;
+            align-items: center;
+            padding: 8px 15px;
+            gap: 8px;
+            flex-shrink: 0;
+            background: #030303;
+        }
+        #cmd-prompt {
+            color: #00ff00;
+            font-weight: bold;
+            white-space: nowrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        #cmd-input {
+            flex: 1;
+            background: transparent;
             border: none;
             color: #00ff00;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 16px;
-            flex-grow: 1;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
             outline: none;
             caret-color: #00ff00;
             text-shadow: 0 0 5px #00ff00;
+        }
+        #cmd-input::placeholder { color: #003300; text-shadow: none; }
+        #cmd-hint {
+            color: #004400;
+            font-size: 11px;
+            text-shadow: none;
+            white-space: nowrap;
+        }
+
+        input[type="password"] {
+            background-color: transparent; border: none; color: #00ff00;
+            font-family: 'Courier New', Courier, monospace; font-size: 16px;
+            flex-grow: 1; outline: none; caret-color: #00ff00; text-shadow: 0 0 5px #00ff00;
         }
 
         @media (max-width: 600px) {
             body { overflow: auto; }
             #app { height: auto; }
             #layout { flex-direction: column; }
-            #sidebar { width: 100%; border-right: none; border-bottom: 1px solid #003300; max-height: 200px; }
-            #editor-panel { min-height: 60vh; }
-            #note-content-input { min-height: 50vh; }
+            #sidebar { width: 100%; border-right: none; border-bottom: 1px solid #003300; max-height: 180px; }
+            #note-content-input { min-height: 40vh; }
         }
     </style>
 </head>
@@ -225,40 +210,42 @@
 
 <div id="app">
     <div id="app-header">
-        <span>== NOTES MODULE == &nbsp; CTRL+S Save &nbsp;|&nbsp; ESC Batal</span>
-        <div>
-            <a href="index.html">KAMUS</a>
-            <a href="todo.html">TODO</a>
-            <a href="excel.html">EXCEL</a>
-        </div>
+        == NOTES MODULE == &nbsp;|&nbsp; CTRL+S simpan &nbsp;|&nbsp; ESC tutup editor &nbsp;|&nbsp;
+        <span style="color:#005500;">goto kamus | todo | excel &nbsp;·&nbsp; add &lt;judul&gt; &nbsp;·&nbsp; rm &lt;judul&gt; &nbsp;·&nbsp; ls &nbsp;·&nbsp; exit</span>
     </div>
 
     <div id="layout">
         <!-- Sidebar -->
         <div id="sidebar">
-            <div id="sidebar-top">
-                <span>[ <span id="note-count">0</span> notes ]</span>
-                <button id="btn-new">+ NEW</button>
-            </div>
-            <div id="notes-list">
-                <div id="empty-list">Belum ada catatan.</div>
-            </div>
+            <div id="sidebar-top">[ <span id="note-count">0</span> notes ]</div>
+            <div id="notes-list"></div>
         </div>
 
-        <!-- Editor -->
+        <!-- Editor panel -->
         <div id="editor-panel">
-            <div id="empty-editor">← Pilih note atau tekan + NEW</div>
+            <div id="empty-editor">
+                <span>Ketik nama note untuk membuka</span>
+                <span style="color:#002200;">add &lt;judul&gt; — buat baru</span>
+                <span style="color:#002200;">ls — daftar semua note</span>
+                <span style="color:#002200;">rm &lt;judul&gt; — hapus</span>
+                <span style="color:#002200;">goto kamus / todo / excel</span>
+            </div>
 
             <div id="editor-form" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
                 <div id="editor-toolbar">
-                    <input type="text" id="note-title-input" placeholder="Judul catatan..." autocomplete="off" spellcheck="false">
-                    <button class="btn-tool" id="btn-save">[CTRL+S] SAVE</button>
-                    <button class="btn-tool btn-del-note" id="btn-delete">[DEL]</button>
+                    <input type="text" id="note-title-input" placeholder="Judul..." autocomplete="off" spellcheck="false">
+                    <button class="btn-tool" id="btn-save">[CTRL+S]</button>
                 </div>
-                <textarea id="note-content-input" placeholder="Tulis catatan di sini..." spellcheck="false"></textarea>
-                <div id="editor-status">--</div>
+                <textarea id="note-content-input" placeholder="Isi catatan..." spellcheck="false"></textarea>
             </div>
         </div>
+    </div>
+
+    <!-- Command bar -->
+    <div id="cmd-bar">
+        <span id="cmd-prompt">root@zasha:~/notes$</span>
+        <input type="text" id="cmd-input" autocomplete="off" spellcheck="false" placeholder="ketik perintah...">
+        <span id="cmd-hint"></span>
     </div>
 </div>
 

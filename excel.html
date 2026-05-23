@@ -183,6 +183,23 @@
             border-top: 1px solid #001a00;
             flex-shrink: 0;
         }
+        #cmd-bar {
+            border-top: 1px solid #003300;
+            display: flex;
+            align-items: center;
+            padding: 7px 15px;
+            gap: 8px;
+            flex-shrink: 0;
+            background: #030303;
+        }
+        #cmd-prompt { color: #00ff00; font-weight: bold; white-space: nowrap; font-family: 'Courier New', monospace; font-size: 14px; }
+        #cmd-input {
+            flex: 1;
+            background: transparent; border: none; color: #00ff00;
+            font-family: 'Courier New', monospace; font-size: 14px;
+            outline: none; caret-color: #00ff00; text-shadow: 0 0 5px #00ff00;
+        }
+        #cmd-input::placeholder { color: #003300; text-shadow: none; }
 
         input[type="password"] {
             background-color: transparent; border: none; color: #00ff00;
@@ -262,6 +279,12 @@
 
             <div id="status-bar">--</div>
         </div>
+    </div>
+
+    <!-- Command bar -->
+    <div id="cmd-bar">
+        <span id="cmd-prompt">root@zasha:~/excel$</span>
+        <input type="text" id="cmd-input" autocomplete="off" spellcheck="false" placeholder="goto kamus | todo | notes | exit">
     </div>
 </div>
 

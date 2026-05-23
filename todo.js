@@ -1,10 +1,12 @@
 import { db, authReady } from './firebase-config.js';
+import { notify } from './notify.js';
 import {
     collection, doc, addDoc, updateDoc, deleteDoc,
     query, orderBy, onSnapshot, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 const PASSWORD = 'zasha';
+const PAGES    = { kamus: 'index.html', notes: 'notes.html', excel: 'excel.html' };
 
 const lockScreen  = document.getElementById('lock-screen');
 const appDiv      = document.getElementById('app');
@@ -54,15 +56,12 @@ function listenTodos() {
 
 // --- Render ---
 function renderTodos(todos) {
-    const pending = todos.filter(t => !t.completed).length;
-    const done    = todos.filter(t => t.completed).length;
-    countPend.textContent = pending;
-    countDone.textContent = done;
+    countPend.textContent = todos.filter(t => !t.completed).length;
+    countDone.textContent = todos.filter(t => t.completed).length;
 
     todoListEl.innerHTML = '';
-
     if (todos.length === 0) {
-        todoListEl.innerHTML = '<div id="empty-tasks" style="color:#003300;text-shadow:none;padding:15px 5px;font-size:13px;">Belum ada task. Ketik sesuatu di bawah dan tekan Enter.</div>';
+        todoListEl.innerHTML = '<div style="color:#003300;text-shadow:none;padding:15px 5px;font-size:13px;">Belum ada task. Ketik sesuatu di bawah dan tekan Enter.</div>';
         return;
     }
 
@@ -76,22 +75,37 @@ function renderTodos(todos) {
         `;
         row.querySelector('.todo-check').addEventListener('click', () => toggleTodo(todo.id, todo.completed));
         row.querySelector('.todo-text').addEventListener('click',  () => toggleTodo(todo.id, todo.completed));
-        row.querySelector('.todo-del').addEventListener('click',   () => deleteTodo(todo.id));
+        row.querySelector('.todo-del').addEventListener('click',   () => deleteTodo(todo.id, todo.text));
         todoListEl.appendChild(row);
     });
 }
 
-// --- Add ---
+// --- Input: tambah task atau command ---
 todoInput.addEventListener('keydown', async (e) => {
     if (e.key !== 'Enter') return;
-    const text = todoInput.value.trim();
-    if (!text) return;
+    const raw   = todoInput.value.trim();
+    if (!raw) return;
+    const lower = raw.toLowerCase();
     todoInput.value = '';
+
+    // ── navigasi ──
+    if (lower === 'exit' || lower === 'goto kamus') {
+        window.location.href = 'index.html'; return;
+    }
+    if (lower.startsWith('goto ')) {
+        const dest = lower.substring(5).trim();
+        if (PAGES[dest]) { window.location.href = PAGES[dest]; }
+        else notify(`Halaman '${dest}' tidak ada. Tersedia: kamus, notes, excel`, 'error');
+        return;
+    }
+
+    // ── tambah task ──
     await addDoc(collection(db, 'todos'), {
-        text,
-        completed: false,
+        text:       raw,
+        completed:  false,
         created_at: serverTimestamp()
     });
+    notify(`Task ditambahkan.`, 'success');
 });
 
 // --- Toggle & Delete ---
@@ -99,8 +113,9 @@ async function toggleTodo(id, current) {
     await updateDoc(doc(db, 'todos', id), { completed: !current });
 }
 
-async function deleteTodo(id) {
+async function deleteTodo(id, text) {
     await deleteDoc(doc(db, 'todos', id));
+    notify(`'${text}' dihapus.`, 'success');
 }
 
 function escHtml(s) {

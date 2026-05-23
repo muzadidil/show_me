@@ -1,8 +1,11 @@
 import { db, authReady } from './firebase-config.js';
+import { notify } from './notify.js';
 import {
     collection, doc, addDoc, getDoc, getDocs, deleteDoc,
     query, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+const PAGES = { kamus: 'index.html', todo: 'todo.html', notes: 'notes.html' };
 
 const PASSWORD  = 'zasha';
 const MAX_ROWS  = 500;
@@ -169,7 +172,7 @@ btnSaveDb.addEventListener('click', async () => {
     if (!pendingUpload || !currentHeaders.length) return;
 
     const filename = fileLabel.textContent;
-    setStatus('[SAVE] Menyimpan ke Firestore...');
+    setStatus('Menyimpan ke Firestore...');
     btnSaveDb.disabled = true;
 
     try {
@@ -185,10 +188,12 @@ btnSaveDb.addEventListener('click', async () => {
         currentFileId = ref.id;
         pendingUpload = false;
         showTableButtons(false);
-        setStatus(`[OK] Tersimpan ke Firestore.`);
+        setStatus('Tersimpan.');
+        notify(`'${filename}' tersimpan ke Firestore.`, 'success');
         await loadFileList();
     } catch (err) {
-        setStatus(`[ERROR] Gagal simpan: ${err.message}`);
+        notify('Gagal simpan: ' + err.message, 'error');
+        setStatus('Gagal simpan.');
     }
     btnSaveDb.disabled = false;
 });
@@ -196,7 +201,8 @@ btnSaveDb.addEventListener('click', async () => {
 // --- Delete from Firestore ---
 btnDelDb.addEventListener('click', async () => {
     if (!currentFileId) return;
-    if (!confirm(`Hapus '${fileLabel.textContent}' dari Firestore?`)) return;
+    const fname = fileLabel.textContent;
+    if (!confirm(`Hapus '${fname}' dari Firestore?`)) return;
     await deleteDoc(doc(db, 'excel_data', currentFileId));
 
     currentHeaders = [];
@@ -207,7 +213,8 @@ btnDelDb.addEventListener('click', async () => {
     fileLabel.textContent = '-- tidak ada file --';
     rowInfo.textContent   = '';
     showUploadZone();
-    setStatus('[OK] File dihapus.');
+    notify(`'${fname}' dihapus.`, 'success');
+    setStatus('File dihapus.');
     await loadFileList();
 });
 
@@ -219,7 +226,7 @@ btnDlXlsx.addEventListener('click', () => {
     XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
     const name = (fileLabel.textContent || 'data').replace(/\.[^.]+$/, '') + '.xlsx';
     XLSX.writeFile(wb, name);
-    setStatus(`[DL] Download '${name}' selesai.`);
+    notify(`Download '${name}' selesai.`, 'success');
 });
 
 // --- Download CSV ---
@@ -234,7 +241,7 @@ btnDlCsv.addEventListener('click', () => {
     a.download = (fileLabel.textContent || 'data').replace(/\.[^.]+$/, '') + '.csv';
     a.click();
     URL.revokeObjectURL(url);
-    setStatus(`[DL] Download CSV selesai.`);
+    notify('Download CSV selesai.', 'success');
 });
 
 // --- Render table ---
@@ -290,6 +297,25 @@ function showUploadZone() {
     btnDelDb.style.display   = 'none';
     btnDlXlsx.style.display  = 'none';
     btnDlCsv.style.display   = 'none';
+}
+
+// --- Command bar (goto / exit) ---
+const cmdInput = document.getElementById('cmd-input');
+if (cmdInput) {
+    cmdInput.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        const lower = cmdInput.value.trim().toLowerCase();
+        cmdInput.value = '';
+        if (!lower) return;
+        if (lower === 'exit' || lower === 'goto kamus') { window.location.href = 'index.html'; return; }
+        if (lower.startsWith('goto ')) {
+            const dest = lower.substring(5).trim();
+            if (PAGES[dest]) { window.location.href = PAGES[dest]; }
+            else notify(`Halaman '${dest}' tidak ada. Tersedia: kamus, todo, notes`, 'error');
+            return;
+        }
+        notify(`Perintah tidak dikenal. Gunakan: goto kamus / todo / notes`, 'warn');
+    });
 }
 
 function setStatus(msg) { statusBar.textContent = msg; }
