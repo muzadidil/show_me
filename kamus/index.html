@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>kamus.zasha.online — Search Terminal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<canvas id="matrix-canvas"></canvas>
+
+<div id="app">
+  <div class="terminal">
+
+    <div class="terminal-titlebar">
+      <div class="dots">
+        <span class="dot red"></span>
+        <span class="dot yellow"></span>
+        <span class="dot green"></span>
+      </div>
+      <span class="titlebar-label">root@kamus.zasha.online — bash — 80×24</span>
+    </div>
+
+    <div class="terminal-body" id="terminal-body">
+      <!-- injected by JS -->
+    </div>
+
+  </div>
+</div>
+
+<!-- Status bar -->
+<div id="status-bar">
+  <span class="metric"><span class="dot-live"></span>LIVE</span>
+  <span class="metric">CPU: <span class="val" id="sb-cpu">--</span>%</span>
+  <span class="metric">MEM: <span class="val" id="sb-mem">--</span>%</span>
+  <span class="metric">PING: <span class="val" id="sb-ping">--</span>ms</span>
+  <span class="metric">IP: <span class="val" id="sb-ip">10.0.0.1</span></span>
+  <span class="metric">UPTIME: <span class="val" id="sb-uptime">00:00:00</span></span>
+</div>
+
+<script>
+// =============================================================================
+// Configuration
+// TODO: Token visible in browser source — safe for casual protection only.
+//       Upgrade to server-side proxy / OAuth for sensitive data.
+// =============================================================================
+const API_URL   = 'GANTI_DENGAN_URL_APPS_SCRIPT_EXEC';
+const API_TOKEN = 'muzadidil';
+const MAX_Q_LEN = 80;
+
+// =============================================================================
+// Boot sequence
+// =============================================================================
+const BOOT_LINES = [
+  { t: '[    0.001] Initializing kernel ring buffer...',     c: 'log-dim'    },
+  { t: '[    0.012] Loading hardware configuration...',      c: 'log-dim'    },
+  { t: '[  OK  ] Started system security service.',          c: 'log-ok'     },
+  { t: '[  OK  ] Mounted /proc and /sys filesystems.',       c: 'log-ok'     },
+  { t: '[  OK  ] Brought up loopback interface.',            c: 'log-ok'     },
+  { t: '[ WARN ] Firewall: allowing outbound port 443.',     c: 'log-warn'   },
+  { t: '[  OK  ] Connected to remote database cluster.',     c: 'log-ok'     },
+  { t: '[  OK  ] API endpoint authenticated.',               c: 'log-ok'     },
+  { t: '[  OK  ] All modules loaded. System ready.',         c: 'log-ok'     },
+];
+
+const ASCII_BANNER = [
+  ' _  __ ___  __  __ _   _ ____',
+  '| |/ // _ \\|  \\/  | | | / ___|',
+  '| \' /| | | | |\\/| | | | \\___ \\',
+  '| . \\| |_| | |  | | |_| |___) |',
+  '|_|\\_\\\\___/|_|  |_|\\___/|____/',
+].join('\n');
+
+const HELP_TEXT = [
+  '',
+  '  ┌──────────────────────────────────────────┐',
+  '  │         AVAILABLE COMMANDS               │',
+  '  ├──────────────────────────────────────────┤',
+  '  │  search <keyword>  — search the database │',
+  '  │  help              — show this help       │',
+  '  │  clear             — clear the screen     │',
+  '  └──────────────────────────────────────────┘',
+  '',
+  '  Examples:',
+  '    search resti wahyu utami',
+  '    search jakarta',
+  '',
+].join('\n');
+
+// =============================================================================
+// DOM refs
+// =============================================================================
+const termBody = document.getElementById('terminal-body');
+let   inputEl  = null;
+
+// =============================================================================
+// Matrix rain
+// =============================================================================
+(function initMatrix() {
+  const canvas = document.getElementById('matrix-canvas');
+  const ctx    = canvas.getContext('2d');
+  const CHARS  = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホ0123456789ABCDEF!@#$%';
+  const FS     = 14;
+  let cols, drops;
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    cols  = Math.floor(canvas.width / FS);
+    drops = Array.from({ length: cols }, () => Math.random() * -canvas.height / FS);
+  }
+
+  function draw() {
+    ctx.fillStyle = 'rgba(2, 4, 2, 0.055)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.font = FS + 'px Courier New';
+    for (let i = 0; i < cols; i++) {
+      ctx.fillStyle = Math.random() > 0.98 ? '#ffffff' : '#00ff00';
+      const ch = CHARS[Math.floor(Math.random() * CHARS.length)];
+      ctx.fillText(ch, i * FS, drops[i] * FS);
+      if (drops[i] * FS > canvas.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i] += 0.5;
+    }
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  setInterval(draw, 50);
+})();
+
+// =============================================================================
+// Status bar metrics
+// =============================================================================
+(function initMetrics() {
+  const sbCpu    = document.getElementById('sb-cpu');
+  const sbMem    = document.getElementById('sb-mem');
+  const sbPing   = document.getElementById('sb-ping');
+  const sbUptime = document.getElementById('sb-uptime');
+  const sbIp     = document.getElementById('sb-ip');
+
+  const startTime = Date.now();
+  // Random-looking private IP
+  sbIp.textContent = '10.' + rnd(0,50) + '.' + rnd(0,255) + '.' + rnd(1,254);
+
+  function update() {
+    sbCpu.textContent  = (Math.random() * 35 + 4).toFixed(1);
+    sbMem.textContent  = (Math.random() * 25 + 38).toFixed(1);
+    sbPing.textContent = Math.floor(Math.random() * 45 + 6);
+
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const h = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+    const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
+    sbUptime.textContent = h + ':' + m + ':' + s;
+  }
+
+  update();
+  setInterval(update, 1000);
+
+  function rnd(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+})();
+
+// =============================================================================
+// Boot sequence
+// =============================================================================
+async function boot() {
+  for (const line of BOOT_LINES) {
+    await typeLog(line.t, line.c, 12);
+    await pause(60);
+  }
+  await pause(200);
+  showBanner();
+  await pause(200);
+  showPrompt();
+}
+
+async function typeLog(text, cls, speed) {
+  const div = document.createElement('div');
+  div.className = 'log-line ' + cls;
+  termBody.appendChild(div);
+  for (const ch of text) {
+    div.textContent += ch;
+    scrollBottom();
+    await pause(speed);
+  }
+}
+
+function showBanner() {
+  const pre = document.createElement('pre');
+  pre.className = 'ascii-banner';
+  pre.textContent = ASCII_BANNER;
+  termBody.appendChild(pre);
+
+  appendLine('kamus.zasha.online — search terminal v2.0', 'banner-sub');
+  appendLine('Type "help" for available commands.', 'log-dim');
+  appendLine('', 'log-dim');
+  scrollBottom();
+}
+
+// =============================================================================
+// Prompt
+// =============================================================================
+function showPrompt() {
+  const line   = document.createElement('div');
+  line.className = 'prompt-line';
+
+  const sign   = document.createElement('span');
+  sign.className = 'prompt-sign';
+  sign.textContent = 'root@kamus:~$';
+
+  inputEl = document.createElement('input');
+  inputEl.type         = 'text';
+  inputEl.id           = 'cmd-input';
+  inputEl.autocomplete = 'off';
+  inputEl.spellcheck   = false;
+  inputEl.addEventListener('keydown', onEnter);
+
+  const cursor = document.createElement('span');
+  cursor.className = 'prompt-cursor';
+  inputEl.addEventListener('focus', () => cursor.style.visibility = 'hidden');
+  inputEl.addEventListener('blur',  () => cursor.style.visibility = 'visible');
+
+  line.appendChild(sign);
+  line.appendChild(inputEl);
+  line.appendChild(cursor);
+  termBody.appendChild(line);
+  inputEl.focus();
+  scrollBottom();
+
+  // Re-focus on body click
+  termBody.addEventListener('click', () => inputEl && inputEl.focus());
+}
+
+// =============================================================================
+// Key handler
+// =============================================================================
+async function onEnter(e) {
+  if (e.key !== 'Enter') return;
+
+  const raw = inputEl.value.trim();
+  inputEl.value = '';
+
+  if (!raw) return;
+
+  // Echo
+  appendLine('root@kamus:~$ ' + raw, 'log-echo');
+
+  // Remove prompt line before processing
+  inputEl.closest('.prompt-line').remove();
+  inputEl = null;
+
+  await dispatch(raw);
+  showPrompt();
+}
+
+// =============================================================================
+// Command dispatcher
+// =============================================================================
+async function dispatch(raw) {
+  const lower = raw.toLowerCase().trim();
+
+  if (lower === 'help') {
+    appendLine(HELP_TEXT, 'log-dim');
+    return;
+  }
+
+  if (lower === 'clear') {
+    termBody.innerHTML = '';
+    showBanner();
+    return;
+  }
+
+  if (lower.startsWith('search ')) {
+    const q = raw.substring(7).trim().substring(0, MAX_Q_LEN);
+    if (q) { await runSearch(q); }
+    else   { appendLine('[error] Usage: search <keyword>', 'log-error'); }
+    return;
+  }
+
+  if (lower === 'search') {
+    appendLine('[error] Usage: search <keyword>', 'log-error');
+    appendLine('        Example: search resti wahyu utami', 'log-dim');
+    return;
+  }
+
+  appendLine('[error] command not found: ' + esc(raw), 'log-error');
+  appendLine('        Type "help" for available commands.', 'log-dim');
+}
+
+// =============================================================================
+// Search
+// =============================================================================
+async function runSearch(q) {
+  appendLine('', 'log-dim');
+  appendLine('[*] Query   : "' + esc(q) + '"', 'log-system');
+  appendLine('[*] Target  : kamus.zasha.online database', 'log-system');
+  await pause(80);
+  appendLine('[*] Scanning rows...', 'log-system');
+
+  if (API_URL === 'GANTI_DENGAN_URL_APPS_SCRIPT_EXEC') {
+    appendLine('[error] API_URL not configured. Open index.html and set API_URL.', 'log-error');
+    return;
+  }
+
+  const url = API_URL
+    + '?token=' + encodeURIComponent(API_TOKEN)
+    + '&q='     + encodeURIComponent(q);
+
+  try {
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + res.statusText);
+
+    const json = await res.json();
+
+    if (json.error) {
+      appendLine('[error] API returned: ' + esc(json.message || json.error), 'log-error');
+      return;
+    }
+
+    appendLine('', 'log-dim');
+
+    if (json.count === 0) {
+      appendLine('[warn] No records found matching "' + esc(q) + '"', 'log-warn');
+      appendLine('[warn] Try a different keyword or check spelling.', 'log-warn');
+      return;
+    }
+
+    appendLine('[ok] ' + json.count + ' record(s) found for "' + esc(q) + '"', 'log-ok');
+    renderTable(json.data, q);
+
+  } catch (err) {
+    appendLine('[error] Failed to reach API: ' + esc(err.message), 'log-error');
+    appendLine('[error] Ensure Apps Script is deployed and API_URL is correct.', 'log-error');
+  }
+}
+
+// =============================================================================
+// Table renderer — textContent only (XSS safe, no innerHTML for data)
+// =============================================================================
+function renderTable(rows, query) {
+  if (!rows.length) return;
+
+  const headers = Object.keys(rows[0]);
+  const q       = query.toLowerCase();
+
+  const wrap  = document.createElement('div');
+  wrap.className = 'result-wrap';
+
+  const table = document.createElement('table');
+  table.className = 'result-table';
+
+  // thead
+  const thead = table.createTHead();
+  const hrow  = thead.insertRow();
+  headers.forEach(h => {
+    const th = document.createElement('th');
+    th.textContent = h;
+    hrow.appendChild(th);
+  });
+
+  // tbody — textContent only
+  const tbody = table.createTBody();
+  rows.forEach(row => {
+    const tr      = tbody.insertRow();
+    const isMatch = headers.some(h =>
+      String(row[h] ?? '').toLowerCase().includes(q)
+    );
+    if (isMatch) tr.classList.add('match-row');
+
+    headers.forEach(h => {
+      const td = tr.insertCell();
+      td.textContent = row[h] !== undefined ? String(row[h]) : '';
+    });
+  });
+
+  // footer row count
+  const foot = document.createElement('tfoot');
+  const frow = foot.insertRow();
+  const ftd  = frow.insertCell();
+  ftd.colSpan = headers.length;
+  ftd.className = 'result-count';
+  ftd.textContent = rows.length + ' rows returned';
+  table.appendChild(foot);
+
+  wrap.appendChild(table);
+  termBody.appendChild(wrap);
+  scrollBottom();
+}
+
+// =============================================================================
+// Utilities
+// =============================================================================
+function appendLine(text, cls) {
+  const div = document.createElement('div');
+  div.className = 'log-line ' + (cls || 'log-ok');
+  div.textContent = text;
+  termBody.appendChild(div);
+  scrollBottom();
+}
+
+function scrollBottom() {
+  termBody.scrollTop = termBody.scrollHeight;
+}
+
+function pause(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+// Escape for use in string concatenation displayed via textContent
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+// =============================================================================
+// Start
+// =============================================================================
+boot();
+</script>
+</body>
+</html>
