@@ -12,12 +12,17 @@ const lockScreen  = document.getElementById('lock-screen');
 const appDiv      = document.getElementById('app');
 const passInput   = document.getElementById('pass-input');
 const lockError   = document.getElementById('lock-error');
-const todoListEl  = document.getElementById('todo-list');
-const todoInput   = document.getElementById('todo-input');
-const countPend   = document.getElementById('count-pending');
-const countDone   = document.getElementById('count-done');
+const sidebarList = document.getElementById('todo-sidebar-list');
+const countAll    = document.getElementById('count-all');
+const statPending = document.getElementById('stat-pending');
+const statDone    = document.getElementById('stat-done');
 const clockEl     = document.getElementById('clock');
 const dateEl      = document.getElementById('date-display');
+const cmdInput    = document.getElementById('cmd-input');
+const cmdHint     = document.getElementById('cmd-hint');
+
+let allTodos        = [];
+let pendingDeleteId = null;
 
 // --- Clock ---
 function updateClock() {
@@ -35,8 +40,8 @@ passInput.addEventListener('keydown', async (e) => {
     if (e.key !== 'Enter') return;
     if (passInput.value === PASSWORD) {
         lockScreen.style.display = 'none';
-        appDiv.style.display = 'block';
-        todoInput.focus();
+        appDiv.style.display = 'flex';
+        cmdInput.focus();
         await authReady;
         listenTodos();
     } else {
@@ -49,78 +54,113 @@ passInput.addEventListener('keydown', async (e) => {
 function listenTodos() {
     const q = query(collection(db, 'todos'), orderBy('created_at', 'asc'));
     onSnapshot(q, snap => {
-        const todos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderTodos(todos);
+        allTodos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderSidebar();
     });
 }
 
-// --- Render ---
-function renderTodos(todos) {
-    countPend.textContent = todos.filter(t => !t.completed).length;
-    countDone.textContent = todos.filter(t => t.completed).length;
+function renderSidebar() {
+    const pending = allTodos.filter(t => !t.completed).length;
+    const done    = allTodos.filter(t =>  t.completed).length;
+    countAll.textContent    = allTodos.length;
+    statPending.textContent = pending;
+    statDone.textContent    = done;
 
-    todoListEl.innerHTML = '';
-    if (todos.length === 0) {
-        todoListEl.innerHTML = '<div style="color:#003300;text-shadow:none;padding:15px 5px;font-size:13px;">Belum ada task. Ketik sesuatu di bawah dan tekan Enter.</div>';
+    sidebarList.innerHTML = '';
+    if (allTodos.length === 0) {
+        sidebarList.innerHTML = '<div style="color:#002200;font-size:12px;padding:12px;text-shadow:none;">Belum ada task.</div>';
+        return;
+    }
+    allTodos.forEach(todo => {
+        const item = document.createElement('div');
+        item.className = 'ts-item' + (todo.completed ? ' done' : '');
+        item.innerHTML = `
+            <span class="ts-check">${todo.completed ? '[X]' : '[ ]'}</span>
+            <span class="ts-text">${escHtml(todo.text)}</span>
+            <span class="ts-del">[X]</span>
+        `;
+        item.querySelector('.ts-check').addEventListener('click', () => toggleTodo(todo.id, todo.completed));
+        item.querySelector('.ts-text').addEventListener('click',  () => toggleTodo(todo.id, todo.completed));
+        item.querySelector('.ts-del').addEventListener('click',   () => {
+            pendingDeleteId = todo.id;
+            cmdHint.textContent = `Hapus '${todo.text}'? Ketik YES.`;
+            cmdInput.focus();
+        });
+        sidebarList.appendChild(item);
+    });
+}
+
+// --- Commands ---
+cmdInput.addEventListener('keydown', async (e) => {
+    if (e.key !== 'Enter') return;
+    const raw   = cmdInput.value.trim();
+    if (!raw) return;
+    const lower = raw.toLowerCase();
+    cmdInput.value = '';
+    cmdHint.textContent = '';
+
+    if (pendingDeleteId) {
+        if (lower === 'yes') {
+            const todo = allTodos.find(t => t.id === pendingDeleteId);
+            await deleteDoc(doc(db, 'todos', pendingDeleteId));
+            notify(`'${todo?.text || 'task'}' dihapus.`, 'success');
+        } else {
+            notify('Hapus dibatalkan.', 'warn');
+        }
+        pendingDeleteId = null;
         return;
     }
 
-    todos.forEach(todo => {
-        const row = document.createElement('div');
-        row.className = 'todo-item';
-        row.innerHTML = `
-            <span class="todo-check">${todo.completed ? '[X]' : '[ ]'}</span>
-            <span class="todo-text ${todo.completed ? 'done' : ''}">${escHtml(todo.text)}</span>
-            <span class="todo-del">[DEL]</span>
-        `;
-        row.querySelector('.todo-check').addEventListener('click', () => toggleTodo(todo.id, todo.completed));
-        row.querySelector('.todo-text').addEventListener('click',  () => toggleTodo(todo.id, todo.completed));
-        row.querySelector('.todo-del').addEventListener('click',   () => deleteTodo(todo.id, todo.text));
-        todoListEl.appendChild(row);
-    });
-}
-
-// --- Input: tambah task atau command ---
-todoInput.addEventListener('keydown', async (e) => {
-    if (e.key !== 'Enter') return;
-    const raw   = todoInput.value.trim();
-    if (!raw) return;
-    const lower = raw.toLowerCase();
-    todoInput.value = '';
-
-    // ── navigasi ──
-    if (lower === 'exit' || lower === 'goto kamus') {
-        window.location.href = 'index.html'; return;
-    }
+    if (lower === 'exit' || lower === 'goto kamus') { window.location.href = 'index.html'; return; }
     if (lower.startsWith('goto ')) {
         const dest = lower.substring(5).trim();
         if (PAGES[dest]) { window.location.href = PAGES[dest]; }
-        else notify(`Halaman '${dest}' tidak ada. Tersedia: kamus, notes, excel`, 'error');
+        else notify(`Halaman '${dest}' tidak ada.`, 'error');
         return;
     }
 
-    // ── tambah task ──
+    if (lower === 'ls') {
+        if (!allTodos.length) { notify('Belum ada task.', 'warn'); return; }
+        notify(allTodos.map((t, i) => `${i+1}. ${t.completed ? '[X]' : '[ ]'} ${t.text}`).join('\n'), 'success');
+        return;
+    }
+
+    if (lower === 'clear') {
+        const done = allTodos.filter(t => t.completed);
+        if (!done.length) { notify('Tidak ada task selesai untuk dihapus.', 'warn'); return; }
+        for (const t of done) await deleteDoc(doc(db, 'todos', t.id));
+        notify(`${done.length} task selesai dihapus.`, 'success');
+        return;
+    }
+
+    if (lower.startsWith('done ')) {
+        const q = raw.substring(5).trim().toLowerCase();
+        const found = allTodos.find(t => t.text.toLowerCase().includes(q) && !t.completed);
+        if (!found) { notify(`Task '${q}' tidak ditemukan.`, 'error'); return; }
+        await updateDoc(doc(db, 'todos', found.id), { completed: true });
+        notify(`'${found.text}' selesai.`, 'success');
+        return;
+    }
+
+    if (lower.startsWith('rm ')) {
+        const q = raw.substring(3).trim().toLowerCase();
+        const found = allTodos.find(t => t.text.toLowerCase().includes(q));
+        if (!found) { notify(`Task '${q}' tidak ditemukan.`, 'error'); return; }
+        pendingDeleteId = found.id;
+        cmdHint.textContent = `Hapus '${found.text}'? Ketik YES.`;
+        return;
+    }
+
     await addDoc(collection(db, 'todos'), {
-        text:       raw,
-        completed:  false,
-        created_at: serverTimestamp()
+        text: raw, completed: false, created_at: serverTimestamp()
     });
-    notify(`Task ditambahkan.`, 'success');
+    notify('Task ditambahkan.', 'success');
 });
 
-// --- Toggle & Delete ---
 async function toggleTodo(id, current) {
     await updateDoc(doc(db, 'todos', id), { completed: !current });
 }
 
-async function deleteTodo(id, text) {
-    await deleteDoc(doc(db, 'todos', id));
-    notify(`'${text}' dihapus.`, 'success');
-}
-
 function escHtml(s) {
-    return String(s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
