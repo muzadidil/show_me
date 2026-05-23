@@ -8,41 +8,53 @@
 </head>
 <body>
 
-<canvas id="matrix-canvas"></canvas>
-
 <div id="app">
-  <div class="terminal">
+  <div class="hk-stage">
 
-    <div class="terminal-titlebar">
-      <div class="dots">
-        <span class="dot red"></span>
-        <span class="dot yellow"></span>
-        <span class="dot green"></span>
+    <!-- Matrix rain background -->
+    <canvas id="matrix-canvas"></canvas>
+
+    <!-- Terminal window -->
+    <div class="hk-win">
+
+      <!-- Title bar -->
+      <div class="hk-bar">
+        <span class="hk-dot dot-r"></span>
+        <span class="hk-dot dot-y"></span>
+        <span class="hk-dot dot-g"></span>
+        <span class="bar-label">root@kamus.zasha.online: ~/secure</span>
+        <span class="bar-right">&#x1F512; ENCRYPTED</span>
       </div>
-      <span class="titlebar-label">root@kamus.zasha.online — bash — 80×24</span>
+
+      <!-- Terminal output -->
+      <div class="hk-body" id="terminal-body"></div>
+
+      <!-- Status bar (inside terminal) -->
+      <div class="hk-foot">
+        <span><span class="dot-live"></span><span id="sb-status">connecting...</span></span>
+        <span>
+          CPU <span class="val" id="sb-cpu">--</span>%
+          &nbsp;&middot;&nbsp;
+          MEM <span class="val" id="sb-mem">--</span>%
+          &nbsp;&middot;&nbsp;
+          PING <span class="val" id="sb-ping">--</span>ms
+          &nbsp;&middot;&nbsp;
+          IP <span class="val" id="sb-ip">--</span>
+        </span>
+      </div>
+
     </div>
 
-    <div class="terminal-body" id="terminal-body">
-      <!-- injected by JS -->
-    </div>
+    <!-- CRT scanline overlay (on top of everything) -->
+    <div class="hk-scan"></div>
 
   </div>
-</div>
-
-<!-- Status bar -->
-<div id="status-bar">
-  <span class="metric"><span class="dot-live"></span>LIVE</span>
-  <span class="metric">CPU: <span class="val" id="sb-cpu">--</span>%</span>
-  <span class="metric">MEM: <span class="val" id="sb-mem">--</span>%</span>
-  <span class="metric">PING: <span class="val" id="sb-ping">--</span>ms</span>
-  <span class="metric">IP: <span class="val" id="sb-ip">10.0.0.1</span></span>
-  <span class="metric">UPTIME: <span class="val" id="sb-uptime">00:00:00</span></span>
 </div>
 
 <script>
 // =============================================================================
 // Configuration
-// TODO: Token visible in browser source — safe for casual protection only.
+// TODO: Token visible in browser source — fine for casual protection only.
 //       Upgrade to server-side proxy / OAuth for sensitive data.
 // =============================================================================
 const API_URL   = 'https://script.google.com/macros/s/AKfycbxPQTPesWMKfYiRsVo6ZpHRdkx_vmXxlGZ9FiJchZ5CDFB2kYK_86Gyuf_yXnepaLy6lA/exec';
@@ -53,21 +65,19 @@ const MAX_Q_LEN = 80;
 // Boot sequence
 // =============================================================================
 const BOOT_LINES = [
-  { t: '[    0.001] Initializing kernel ring buffer...',     c: 'log-dim'    },
-  { t: '[    0.012] Loading hardware configuration...',      c: 'log-dim'    },
-  { t: '[  OK  ] Started system security service.',          c: 'log-ok'     },
-  { t: '[  OK  ] Mounted /proc and /sys filesystems.',       c: 'log-ok'     },
-  { t: '[  OK  ] Brought up loopback interface.',            c: 'log-ok'     },
-  { t: '[ WARN ] Firewall: allowing outbound port 443.',     c: 'log-warn'   },
-  { t: '[  OK  ] Connected to remote database cluster.',     c: 'log-ok'     },
-  { t: '[  OK  ] API endpoint authenticated.',               c: 'log-ok'     },
-  { t: '[  OK  ] All modules loaded. System ready.',         c: 'log-ok'     },
+  { t: '[ boot ] initializing secure shell ...',                c: 'log-dim',  d: 10 },
+  { t: '[  ok  ] kernel modules loaded',                        c: 'log-ok',   d: 8  },
+  { t: '[  ok  ] mounting /dev/sheets (read-only)',              c: 'log-ok',   d: 8  },
+  { t: '[ warn ] public endpoint exposed · token guard active', c: 'log-warn', d: 12 },
+  { t: '[  ok  ] connection established · TLS 1.3',            c: 'log-ok',   d: 8  },
+  { t: '[  ok  ] API endpoint authenticated',                   c: 'log-ok',   d: 8  },
+  { t: '[  ok  ] all modules loaded · system ready',           c: 'log-ok',   d: 8  },
 ];
 
 const ASCII_BANNER = [
   ' _  __ ___  __  __ _   _ ____',
   '| |/ // _ \\|  \\/  | | | / ___|',
-  '| \' /| | | | |\\/| | | | \\___ \\',
+  "| ' /| | | | |\\/| | | | \\___ \\",
   '| . \\| |_| | |  | | |_| |___) |',
   '|_|\\_\\\\___/|_|  |_|\\___/|____/',
 ].join('\n');
@@ -77,7 +87,7 @@ const HELP_TEXT = [
   '  ┌──────────────────────────────────────────┐',
   '  │         AVAILABLE COMMANDS               │',
   '  ├──────────────────────────────────────────┤',
-  '  │  search <keyword>  — search the database │',
+  '  │  search <keyword>  — search the database  │',
   '  │  help              — show this help       │',
   '  │  clear             — clear the screen     │',
   '  └──────────────────────────────────────────┘',
@@ -89,44 +99,45 @@ const HELP_TEXT = [
 ].join('\n');
 
 // =============================================================================
-// DOM refs
+// DOM
 // =============================================================================
 const termBody = document.getElementById('terminal-body');
 let   inputEl  = null;
 
 // =============================================================================
-// Matrix rain
+// Matrix rain — canvas is inside .hk-stage (not full-page)
 // =============================================================================
 (function initMatrix() {
   const canvas = document.getElementById('matrix-canvas');
   const ctx    = canvas.getContext('2d');
-  const CHARS  = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホ0123456789ABCDEF!@#$%';
+  const stage  = canvas.parentElement;
+  const CHARS  = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホ0123456789ABCDEF!@#$%'.split('');
   const FS     = 14;
   let cols, drops;
 
   function resize() {
-    canvas.width  = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width  = stage.clientWidth;
+    canvas.height = stage.clientHeight;
     cols  = Math.floor(canvas.width / FS);
-    drops = Array.from({ length: cols }, () => Math.random() * -canvas.height / FS);
+    drops = Array.from({ length: cols }, () => Math.floor(Math.random() * -50));
   }
 
   function draw() {
-    ctx.fillStyle = 'rgba(2, 4, 2, 0.055)';
+    ctx.fillStyle = 'rgba(2,4,2,0.08)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.font = FS + 'px Courier New';
+    ctx.fillStyle = '#0f0';
+    ctx.font      = FS + 'px monospace';
     for (let i = 0; i < cols; i++) {
-      ctx.fillStyle = Math.random() > 0.98 ? '#ffffff' : '#00ff00';
       const ch = CHARS[Math.floor(Math.random() * CHARS.length)];
       ctx.fillText(ch, i * FS, drops[i] * FS);
       if (drops[i] * FS > canvas.height && Math.random() > 0.975) drops[i] = 0;
-      drops[i] += 0.5;
+      drops[i]++;
     }
   }
 
   resize();
   window.addEventListener('resize', resize);
-  setInterval(draw, 50);
+  setInterval(draw, 55);
 })();
 
 // =============================================================================
@@ -136,29 +147,28 @@ let   inputEl  = null;
   const sbCpu    = document.getElementById('sb-cpu');
   const sbMem    = document.getElementById('sb-mem');
   const sbPing   = document.getElementById('sb-ping');
-  const sbUptime = document.getElementById('sb-uptime');
   const sbIp     = document.getElementById('sb-ip');
+  const sbStatus = document.getElementById('sb-status');
 
-  const startTime = Date.now();
-  // Random-looking private IP
   sbIp.textContent = '10.' + rnd(0,50) + '.' + rnd(0,255) + '.' + rnd(1,254);
 
   function update() {
     sbCpu.textContent  = (Math.random() * 35 + 4).toFixed(1);
     sbMem.textContent  = (Math.random() * 25 + 38).toFixed(1);
-    sbPing.textContent = Math.floor(Math.random() * 45 + 6);
-
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    const h = String(Math.floor(elapsed / 3600)).padStart(2, '0');
-    const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
-    const s = String(elapsed % 60).padStart(2, '0');
-    sbUptime.textContent = h + ':' + m + ':' + s;
+    sbPing.textContent = rnd(6, 48);
   }
 
   update();
-  setInterval(update, 1000);
+  setInterval(update, 900);
 
-  function rnd(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+  // Set status to ONLINE after boot
+  setTimeout(() => {
+    sbStatus.textContent = 'ONLINE · query ok';
+    sbStatus.style.color = '#00ff00';
+    sbStatus.style.textShadow = '0 0 4px #00ff00';
+  }, 4000);
+
+  function rnd(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
 })();
 
 // =============================================================================
@@ -166,10 +176,10 @@ let   inputEl  = null;
 // =============================================================================
 async function boot() {
   for (const line of BOOT_LINES) {
-    await typeLog(line.t, line.c, 12);
-    await pause(60);
+    await typeLog(line.t, line.c, line.d);
+    await pause(65);
   }
-  await pause(200);
+  await pause(180);
   showBanner();
   await pause(200);
   showPrompt();
@@ -191,9 +201,8 @@ function showBanner() {
   pre.className = 'ascii-banner';
   pre.textContent = ASCII_BANNER;
   termBody.appendChild(pre);
-
-  appendLine('kamus.zasha.online — search terminal v2.0', 'banner-sub');
-  appendLine('Type "help" for available commands.', 'log-dim');
+  appendLine('authenticated as operator · access level: READ', 'log-ok');
+  appendLine('type "help" for available commands.', 'log-dim');
   appendLine('', 'log-dim');
   scrollBottom();
 }
@@ -206,7 +215,7 @@ function showPrompt() {
   line.className = 'prompt-line';
 
   const sign   = document.createElement('span');
-  sign.className = 'prompt-sign';
+  sign.className   = 'prompt-sign';
   sign.textContent = 'root@kamus:~$';
 
   inputEl = document.createElement('input');
@@ -218,8 +227,8 @@ function showPrompt() {
 
   const cursor = document.createElement('span');
   cursor.className = 'prompt-cursor';
-  inputEl.addEventListener('focus', () => cursor.style.visibility = 'hidden');
-  inputEl.addEventListener('blur',  () => cursor.style.visibility = 'visible');
+  inputEl.addEventListener('focus', () => { cursor.style.visibility = 'hidden'; });
+  inputEl.addEventListener('blur',  () => { cursor.style.visibility = 'visible'; });
 
   line.appendChild(sign);
   line.appendChild(inputEl);
@@ -228,7 +237,6 @@ function showPrompt() {
   inputEl.focus();
   scrollBottom();
 
-  // Re-focus on body click
   termBody.addEventListener('click', () => inputEl && inputEl.focus());
 }
 
@@ -237,16 +245,11 @@ function showPrompt() {
 // =============================================================================
 async function onEnter(e) {
   if (e.key !== 'Enter') return;
-
   const raw = inputEl.value.trim();
   inputEl.value = '';
-
   if (!raw) return;
 
-  // Echo
   appendLine('root@kamus:~$ ' + raw, 'log-echo');
-
-  // Remove prompt line before processing
   inputEl.closest('.prompt-line').remove();
   inputEl = null;
 
@@ -285,7 +288,7 @@ async function dispatch(raw) {
   }
 
   appendLine('[error] command not found: ' + esc(raw), 'log-error');
-  appendLine('        Type "help" for available commands.', 'log-dim');
+  appendLine('        type "help" for available commands.', 'log-dim');
 }
 
 // =============================================================================
@@ -293,15 +296,9 @@ async function dispatch(raw) {
 // =============================================================================
 async function runSearch(q) {
   appendLine('', 'log-dim');
-  appendLine('[*] Query   : "' + esc(q) + '"', 'log-system');
-  appendLine('[*] Target  : kamus.zasha.online database', 'log-system');
-  await pause(80);
-  appendLine('[*] Scanning rows...', 'log-system');
-
-  if (API_URL === 'GANTI_DENGAN_URL_APPS_SCRIPT_EXEC') {
-    appendLine('[error] API_URL not configured. Open index.html and set API_URL.', 'log-error');
-    return;
-  }
+  appendLine('> query --keyword "' + esc(q) + '"', 'log-sys');
+  await pause(100);
+  appendLine('> scanning rows ...', 'log-sys');
 
   const url = API_URL
     + '?token=' + encodeURIComponent(API_TOKEN)
@@ -314,29 +311,28 @@ async function runSearch(q) {
     const json = await res.json();
 
     if (json.error) {
-      appendLine('[error] API returned: ' + esc(json.message || json.error), 'log-error');
+      appendLine('[error] API: ' + esc(json.message || json.error), 'log-error');
       return;
     }
-
-    appendLine('', 'log-dim');
 
     if (json.count === 0) {
-      appendLine('[warn] No records found matching "' + esc(q) + '"', 'log-warn');
-      appendLine('[warn] Try a different keyword or check spelling.', 'log-warn');
+      appendLine('> scanning ' + (json.total || '?') + ' rows ... matched 0', 'log-dim');
+      appendLine('[warn] no records found for: "' + esc(q) + '"', 'log-warn');
       return;
     }
 
-    appendLine('[ok] ' + json.count + ' record(s) found for "' + esc(q) + '"', 'log-ok');
+    appendLine('> scanning ' + (json.total || '?') + ' rows ... matched ' + json.count, 'log-dim');
+    appendLine('[ok] ' + json.count + ' record(s) found.', 'log-ok');
     renderTable(json.data, q);
 
   } catch (err) {
-    appendLine('[error] Failed to reach API: ' + esc(err.message), 'log-error');
-    appendLine('[error] Ensure Apps Script is deployed and API_URL is correct.', 'log-error');
+    appendLine('[error] failed to reach API: ' + esc(err.message), 'log-error');
+    appendLine('[error] check API_URL or redeploy Apps Script.', 'log-error');
   }
 }
 
 // =============================================================================
-// Table renderer — textContent only (XSS safe, no innerHTML for data)
+// Table — textContent only (XSS safe)
 // =============================================================================
 function renderTable(rows, query) {
   if (!rows.length) return;
@@ -359,29 +355,25 @@ function renderTable(rows, query) {
     hrow.appendChild(th);
   });
 
-  // tbody — textContent only
+  // tbody
   const tbody = table.createTBody();
   rows.forEach(row => {
     const tr      = tbody.insertRow();
-    const isMatch = headers.some(h =>
-      String(row[h] ?? '').toLowerCase().includes(q)
-    );
+    const isMatch = headers.some(h => String(row[h] ?? '').toLowerCase().includes(q));
     if (isMatch) tr.classList.add('match-row');
-
     headers.forEach(h => {
       const td = tr.insertCell();
       td.textContent = row[h] !== undefined ? String(row[h]) : '';
     });
   });
 
-  // footer row count
-  const foot = document.createElement('tfoot');
-  const frow = foot.insertRow();
-  const ftd  = frow.insertCell();
-  ftd.colSpan = headers.length;
+  // tfoot
+  const tfoot = table.createTFoot();
+  const frow  = tfoot.insertRow();
+  const ftd   = frow.insertCell();
+  ftd.colSpan   = headers.length;
   ftd.className = 'result-count';
   ftd.textContent = rows.length + ' rows returned';
-  table.appendChild(foot);
 
   wrap.appendChild(table);
   termBody.appendChild(wrap);
@@ -393,26 +385,16 @@ function renderTable(rows, query) {
 // =============================================================================
 function appendLine(text, cls) {
   const div = document.createElement('div');
-  div.className = 'log-line ' + (cls || 'log-ok');
+  div.className   = 'log-line ' + (cls || 'log-ok');
   div.textContent = text;
   termBody.appendChild(div);
   scrollBottom();
 }
 
-function scrollBottom() {
-  termBody.scrollTop = termBody.scrollHeight;
-}
-
-function pause(ms) {
-  return new Promise(r => setTimeout(r, ms));
-}
-
-// Escape for use in string concatenation displayed via textContent
+function scrollBottom() { termBody.scrollTop = termBody.scrollHeight; }
+function pause(ms)       { return new Promise(r => setTimeout(r, ms)); }
 function esc(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // =============================================================================

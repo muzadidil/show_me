@@ -27,7 +27,7 @@ function doGet(e) {
     const { headers, rows } = readSheet();
     const matched           = filterRows(rows, headers, q);
 
-    return jsonResponse({ count: matched.length, data: matched });
+    return jsonResponse({ count: matched.length, total: rows.length, data: matched });
 
   } catch (err) {
     console.error(JSON.stringify({
