@@ -113,7 +113,7 @@ function updatePrompt() {
 }
 
 document.body.addEventListener('click', () => {
-    if (currentMode === 'terminal') inputField.focus();
+    if (currentMode === 'terminal' && !window.getSelection().toString()) inputField.focus();
 });
 
 historyDiv.addEventListener('click', function (e) {
