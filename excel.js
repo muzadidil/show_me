@@ -189,11 +189,27 @@ function renderTable() {
     updateInfo();
 }
 
+// --- Parse Indonesian number format (10.000 = 10000, 1.234,56 = 1234.56) ---
+function parseIDN(s) {
+    s = String(s).trim().replace(/[^0-9.,\-]/g, '');
+    if (!s) return NaN;
+    if (s.includes(',')) {
+        // comma = decimal sep, dot = thousands sep
+        return parseFloat(s.replace(/\./g, '').replace(',', '.'));
+    }
+    const parts = s.split('.');
+    if (parts.length > 1 && parts.slice(1).every(p => p.length === 3)) {
+        // all dot groups are 3 digits → thousands separator
+        return parseFloat(s.replace(/\./g, ''));
+    }
+    return parseFloat(s);
+}
+
 // --- Sum helpers ---
 function computeSum(rowsData, colIdx) {
     let sum = 0, hasNum = false;
     rowsData.forEach(row => {
-        const v = parseFloat(String(row[colIdx] || '').replace(/[^0-9.,\-]/g, '').replace(',', '.'));
+        const v = parseIDN(row[colIdx] || '');
         if (!isNaN(v) && isFinite(v)) { sum += v; hasNum = true; }
     });
     return hasNum ? sum : null;
@@ -204,7 +220,7 @@ function updateSumHeader() {
     const cells   = dataTable.querySelectorAll(`tbody td[data-col="${lastIdx}"]`);
     let sum = 0, hasNum = false;
     cells.forEach(td => {
-        const v = parseFloat(String(td.textContent || '').replace(/[^0-9.,\-]/g, '').replace(',', '.'));
+        const v = parseIDN(td.textContent || '');
         if (!isNaN(v) && isFinite(v)) { sum += v; hasNum = true; }
     });
     const th = dataTable.querySelector('thead th.th-sum');
@@ -215,7 +231,9 @@ function updateSumHeader() {
 }
 
 function formatSum(val) {
-    return 'Rp ' + val.toLocaleString('id-ID', { maximumFractionDigits: 0 });
+    const rounded = Math.round(val);
+    const formatted = rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return 'Rp ' + formatted;
 }
 
 function updateInfo() {
