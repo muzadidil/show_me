@@ -2,68 +2,57 @@
    style.css  —  Hacker Terminal Theme  —  kamus.zasha.online
 ============================================================================= */
 
-@keyframes blink   { 0%,49%{opacity:1} 50%,100%{opacity:0} }
-@keyframes flicker { 0%,95%{opacity:1} 96%,100%{opacity:.82} }
-@keyframes glitch  {
+@keyframes blink  { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+@keyframes flick  { 0%,95%{opacity:1} 96%,100%{opacity:.82} }
+@keyframes glitchT {
   0%,90%,100% { transform:translate(0,0) }
   92%         { transform:translate(-2px,1px) }
   94%         { transform:translate(2px,-1px) }
 }
-@keyframes fadeIn  {
+@keyframes fadeIn {
   from { opacity:0; transform:translateY(4px); }
   to   { opacity:1; transform:translateY(0); }
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --green:        #00ff00;
-  --green-dim:    #00bb00;
-  --green-bright: #7CFC7C;
-  --green-dark:   #003300;
-  --bg:           #020402;
-  --warn:         #ffd23b;
-  --error:        #ff3b3b;
-  --system:       #00cccc;
-  --font:         'Courier New', Courier, monospace;
-}
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 
 html, body {
   width: 100%;
   min-height: 100vh;
-  background: var(--bg);
-  color: var(--green);
-  font-family: var(--font);
+  background: #020402;
+  color: #00ff00;
+  font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
   overflow-x: hidden;
-  animation: flicker 6s infinite;
+  animation: flick 6s infinite;
 }
 
 #app {
-  position: relative;
   max-width: 980px;
   margin: 20px auto;
   padding: 0 16px 20px;
 }
 
-/* ── Stage: wraps canvas + terminal window + scanline ────────────────────── */
+/* ── Stage ───────────────────────────────────────────────────────────────── */
 .hk-stage {
   position: relative;
-  background: var(--bg);
+  min-height: 560px;
+  background: #020402;
   border-radius: 12px;
   overflow: hidden;
+  padding: 18px;
 }
 
 /* ── Matrix rain canvas ──────────────────────────────────────────────────── */
-#matrix-canvas {
+.hk-rain {
   position: absolute;
   inset: 0;
   z-index: 1;
-  opacity: 0.28;
+  opacity: .28;
   pointer-events: none;
 }
 
-/* ── CRT scanline + color fringe overlay ─────────────────────────────────── */
+/* ── CRT scanline overlay ────────────────────────────────────────────────── */
 .hk-scan {
   position: absolute;
   inset: 0;
@@ -73,21 +62,20 @@ html, body {
     linear-gradient(rgba(0,0,0,0) 50%, rgba(0,0,0,.28) 50%),
     linear-gradient(90deg, rgba(255,0,0,.05), rgba(0,255,0,.02), rgba(0,0,255,.05));
   background-size: 100% 3px, 4px 100%;
-  animation: flicker 6s infinite;
+  animation: flick 6s infinite;
 }
 
 /* ── Terminal window ─────────────────────────────────────────────────────── */
 .hk-win {
   position: relative;
   z-index: 3;
-  border: 1px solid var(--green);
+  border: 1px solid #0f0;
   border-radius: 6px;
-  background: rgba(2, 8, 2, .82);
+  background: rgba(2,8,2,.82);
   box-shadow: 0 0 18px rgba(0,255,0,.25);
   display: flex;
   flex-direction: column;
   min-height: 520px;
-  margin: 18px;
   overflow: hidden;
 }
 
@@ -96,65 +84,64 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 13px;
+  padding: 6px 12px;
   background: #001a00;
-  border-bottom: 1px solid var(--green);
-  color: var(--green-bright);
+  border-bottom: 1px solid #0f0;
+  color: #7CFC7C;
   font-size: 12px;
-  text-shadow: 0 0 4px var(--green);
+  text-shadow: 0 0 4px #0f0;
   flex-shrink: 0;
 }
-.hk-dot      { width:11px; height:11px; border-radius:50%; display:inline-block; flex-shrink:0; }
-.dot-r       { background:#ff5f56; box-shadow:0 0 4px #ff5f5680; }
-.dot-y       { background:#ffbd2e; box-shadow:0 0 4px #ffbd2e80; }
-.dot-g       { background:#27c93f; box-shadow:0 0 4px #27c93f80; }
-.bar-label   { margin-left:6px; letter-spacing:.5px; }
-.bar-right   { margin-left:auto; color:var(--green-dim); font-size:11px; }
+.hk-dot { width:11px; height:11px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.bar-label { margin-left:6px; letter-spacing:.5px; }
+.bar-right  { margin-left:auto; color:#00bb00; font-size:11px; }
 
 /* ── Terminal body ───────────────────────────────────────────────────────── */
 .hk-body {
   flex: 1;
-  padding: 14px 16px;
+  padding: 14px;
+  color: #0f0;
   font-size: 13.5px;
   line-height: 1.55;
   text-shadow: 0 0 5px rgba(0,255,0,.55);
   overflow-y: auto;
   max-height: 65vh;
 }
-.hk-body::-webkit-scrollbar              { width: 4px; }
-.hk-body::-webkit-scrollbar-thumb        { background: var(--green-dark); border-radius:2px; }
-.hk-body::-webkit-scrollbar-track        { background: transparent; }
+.hk-body::-webkit-scrollbar       { width:4px; }
+.hk-body::-webkit-scrollbar-thumb { background:#003300; border-radius:2px; }
+.hk-body::-webkit-scrollbar-track { background:transparent; }
+.hk-body b { color:#aaffaa; }
 
-/* ── Log lines ───────────────────────────────────────────────────────────── */
-.log-line  { margin:2px 0; white-space:pre-wrap; word-break:break-word; animation:fadeIn .12s ease; }
-.log-ok    { color:var(--green);   text-shadow:0 0 5px rgba(0,255,0,.5);   }
-.log-warn  { color:var(--warn);    text-shadow:0 0 5px rgba(255,210,59,.5); }
-.log-error { color:var(--error);   text-shadow:0 0 5px rgba(255,59,59,.5);  }
-.log-sys   { color:var(--system);  text-shadow:0 0 5px rgba(0,200,200,.4);  }
-.log-dim   { color:#0a0;           text-shadow:none; }
-.log-echo  { color:#005500;        text-shadow:none; }
+/* ── Log line types ──────────────────────────────────────────────────────── */
+.output-line { margin:2px 0; white-space:pre-wrap; word-break:break-word; animation:fadeIn .12s ease; }
+.hk-warn     { color:#ffd23b; text-shadow:0 0 5px rgba(255,200,0,.5); }
+.hk-err      { color:#ff3b3b; text-shadow:0 0 5px rgba(255,0,0,.6); }
+.hk-dim      { color:#0a0;    text-shadow:none; }
+.hk-echo     { color:#005500; text-shadow:none; }
+.hk-sys      { color:#00cccc; text-shadow:0 0 5px rgba(0,200,200,.4); }
 
 /* ── ASCII banner ────────────────────────────────────────────────────────── */
-.ascii-banner {
-  display: block;
-  color: var(--green);
-  font-size: 12px;
-  line-height: 1.1;
-  white-space: pre;
+.hk-asc {
+  color: #0f0;
   font-weight: bold;
-  text-shadow: 0 0 8px var(--green);
-  margin: 8px 0 12px;
-  animation: glitch 5s infinite;
+  line-height: 1.05;
+  font-size: 12px;
+  white-space: pre;
+  display: block;
+  margin: 6px 0 12px;
+  text-shadow: 0 0 8px #0f0;
+  animation: glitchT 5s infinite;
 }
 
 /* ── Prompt line ─────────────────────────────────────────────────────────── */
-.prompt-line   { display:flex; align-items:center; gap:6px; margin-top:8px; }
-.prompt-sign   {
-  color: var(--green-bright);
-  text-shadow: 0 0 6px var(--green);
+.prompt-line { display:flex; align-items:center; gap:0; margin-top:8px; }
+.hk-prompt {
+  color: #7CFC7C;
+  font-weight: bold;
+  margin-right: 8px;
+  text-shadow: 0 0 6px #0f0;
   white-space: nowrap;
   user-select: none;
-  font-weight: bold;
   flex-shrink: 0;
 }
 #cmd-input {
@@ -162,51 +149,52 @@ html, body {
   background: transparent;
   border: none;
   outline: none;
-  color: var(--green);
-  font-family: var(--font);
+  color: #0f0;
+  font-family: 'Courier New', Courier, monospace;
   font-size: 13.5px;
-  text-shadow: 0 0 6px var(--green);
+  text-shadow: 0 0 6px #0f0;
   caret-color: transparent;
   min-width: 0;
 }
-.prompt-cursor {
+.hk-cur {
   display: inline-block;
-  width: 9px; height: 16px;
-  background: var(--green);
-  box-shadow: 0 0 6px var(--green);
+  width: 9px;
+  height: 16px;
+  background: #0f0;
+  vertical-align: -3px;
   animation: blink 1s steps(1) infinite;
-  vertical-align: text-bottom;
+  box-shadow: 0 0 6px #0f0;
   flex-shrink: 0;
 }
 
 /* ── Results table ───────────────────────────────────────────────────────── */
 .result-wrap { overflow-x:auto; margin:8px 0; animation:fadeIn .2s ease; }
-.result-wrap::-webkit-scrollbar        { height:4px; }
-.result-wrap::-webkit-scrollbar-thumb  { background:var(--green-dark); }
+.result-wrap::-webkit-scrollbar       { height:4px; }
+.result-wrap::-webkit-scrollbar-thumb { background:#003300; }
 
-.result-table { width:100%; border-collapse:collapse; font-size:12.5px; text-shadow:none; }
+.hk-tbl { width:100%; border-collapse:collapse; font-size:12.5px; text-shadow:none; }
 
-.result-table th {
+.hk-tbl th {
   text-align: left;
   border-bottom: 1px solid #0a0;
   padding: 5px 8px;
-  color: var(--green-bright);
+  color: #7CFC7C;
   white-space: nowrap;
   background: rgba(0,20,0,.95);
   position: sticky;
   top: 0;
 }
-.result-table td {
+.hk-tbl td {
   padding: 4px 8px;
   border-bottom: 1px dashed #052905;
-  color: var(--green);
+  color: #0f0;
   white-space: nowrap;
   max-width: 260px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.result-table tr.match-row td { background:rgba(0,255,0,.14); color:#aaffaa; }
-.result-table tr:hover td      { background:rgba(0,255,0,.08); }
+.hk-hit td         { background:rgba(0,255,0,.14); color:#aaffaa; }
+.hk-tbl tr:hover td { background:rgba(0,255,0,.08); }
 
 .result-count {
   font-size: 11px;
@@ -223,35 +211,26 @@ html, body {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 6px;
-  padding: 6px 14px;
+  padding: 6px 12px;
   background: #001200;
-  border-top: 1px solid var(--green);
+  border-top: 1px solid #0f0;
   color: #0a0;
   font-size: 11.5px;
   flex-shrink: 0;
 }
-.hk-foot .val {
-  color: var(--green);
-  text-shadow: 0 0 4px var(--green);
-}
-.dot-live {
-  display: inline-block;
-  width: 6px; height: 6px;
-  background: var(--green);
-  border-radius: 50%;
-  box-shadow: 0 0 5px var(--green);
-  animation: blink 1.5s ease-in-out infinite;
-  margin-right: 4px;
-  vertical-align: middle;
+.hk-foot b {
+  color: #0f0;
+  text-shadow: 0 0 4px #0f0;
 }
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
-  #app              { margin:6px auto; padding:0 4px 10px; }
-  .hk-win           { margin:8px; min-height:400px; }
-  .hk-body          { max-height:72vh; font-size:12px; padding:10px 12px; }
-  .ascii-banner     { font-size:8.5px; }
-  .result-table th,
-  .result-table td  { font-size:11px; padding:3px 6px; }
-  .hk-foot          { font-size:10px; gap:4px; padding:5px 10px; }
+  #app          { margin:6px auto; padding:0 4px 10px; }
+  .hk-stage     { padding:8px; min-height:400px; }
+  .hk-win       { min-height:380px; }
+  .hk-body      { max-height:72vh; font-size:12px; padding:10px; }
+  .hk-asc       { font-size:8.5px; }
+  .hk-tbl th,
+  .hk-tbl td    { font-size:11px; padding:3px 6px; }
+  .hk-foot      { font-size:10px; gap:4px; padding:5px 10px; }
 }

@@ -11,67 +11,42 @@
 <div id="app">
   <div class="hk-stage">
 
-    <!-- Matrix rain background -->
-    <canvas id="matrix-canvas"></canvas>
+    <canvas class="hk-rain" id="hkRain"></canvas>
 
-    <!-- Terminal window -->
     <div class="hk-win">
-
-      <!-- Title bar -->
       <div class="hk-bar">
-        <span class="hk-dot dot-r"></span>
-        <span class="hk-dot dot-y"></span>
-        <span class="hk-dot dot-g"></span>
+        <span class="hk-dot" style="background:#ff5f56;box-shadow:0 0 4px #ff5f5680"></span>
+        <span class="hk-dot" style="background:#ffbd2e;box-shadow:0 0 4px #ffbd2e80"></span>
+        <span class="hk-dot" style="background:#27c93f;box-shadow:0 0 4px #27c93f80"></span>
         <span class="bar-label">root@kamus.zasha.online: ~/secure</span>
         <span class="bar-right">&#x1F512; ENCRYPTED</span>
       </div>
 
-      <!-- Terminal output -->
-      <div class="hk-body" id="terminal-body"></div>
+      <div class="hk-body" id="hkBody"></div>
 
-      <!-- Status bar (inside terminal) -->
       <div class="hk-foot">
-        <span><span class="dot-live"></span><span id="sb-status">connecting...</span></span>
-        <span>
-          CPU <span class="val" id="sb-cpu">--</span>%
-          &nbsp;&middot;&nbsp;
-          MEM <span class="val" id="sb-mem">--</span>%
-          &nbsp;&middot;&nbsp;
-          PING <span class="val" id="sb-ping">--</span>ms
-          &nbsp;&middot;&nbsp;
-          IP <span class="val" id="sb-ip">--</span>
-        </span>
+        <span id="hkStat"><b>STATUS:</b> connecting...</span>
+        <span>CPU <b id="hkCpu">--</b> &middot; MEM <b id="hkMem">--</b> &middot; PING <b id="hkPing">--</b> &middot; IP <b id="hkIp">--</b></span>
       </div>
-
     </div>
 
-    <!-- CRT scanline overlay (on top of everything) -->
     <div class="hk-scan"></div>
-
   </div>
 </div>
 
 <script>
-// =============================================================================
-// Configuration
-// TODO: Token visible in browser source — fine for casual protection only.
-//       Upgrade to server-side proxy / OAuth for sensitive data.
-// =============================================================================
 const API_URL   = 'https://script.google.com/macros/s/AKfycbxPQTPesWMKfYiRsVo6ZpHRdkx_vmXxlGZ9FiJchZ5CDFB2kYK_86Gyuf_yXnepaLy6lA/exec';
 const API_TOKEN = 'muzadidil';
 const MAX_Q_LEN = 80;
 
-// =============================================================================
-// Boot sequence
-// =============================================================================
 const BOOT_LINES = [
-  { t: '[ boot ] initializing secure shell ...',                c: 'log-dim',  d: 10 },
-  { t: '[  ok  ] kernel modules loaded',                        c: 'log-ok',   d: 8  },
-  { t: '[  ok  ] mounting /dev/sheets (read-only)',              c: 'log-ok',   d: 8  },
-  { t: '[ warn ] public endpoint exposed · token guard active', c: 'log-warn', d: 12 },
-  { t: '[  ok  ] connection established · TLS 1.3',            c: 'log-ok',   d: 8  },
-  { t: '[  ok  ] API endpoint authenticated',                   c: 'log-ok',   d: 8  },
-  { t: '[  ok  ] all modules loaded · system ready',           c: 'log-ok',   d: 8  },
+  { t: '[ boot ] initializing secure shell ...',                c: 'hk-dim',  d: 10 },
+  { t: '[  ok  ] kernel modules loaded',                        c: '',        d: 8  },
+  { t: '[  ok  ] mounting /dev/sheets (read-only)',              c: '',        d: 8  },
+  { t: '[ warn ] public endpoint exposed · token guard active', c: 'hk-warn', d: 12 },
+  { t: '[  ok  ] connection established · TLS 1.3',             c: '',        d: 8  },
+  { t: '[  ok  ] API endpoint authenticated',                   c: '',        d: 8  },
+  { t: '[  ok  ] all modules loaded · system ready',            c: '',        d: 8  },
 ];
 
 const ASCII_BANNER = [
@@ -98,17 +73,13 @@ const HELP_TEXT = [
   '',
 ].join('\n');
 
-// =============================================================================
-// DOM
-// =============================================================================
-const termBody = document.getElementById('terminal-body');
+// ── DOM ───────────────────────────────────────────────────────────────────────
+const termBody = document.getElementById('hkBody');
 let   inputEl  = null;
 
-// =============================================================================
-// Matrix rain — canvas is inside .hk-stage (not full-page)
-// =============================================================================
+// ── Matrix rain ───────────────────────────────────────────────────────────────
 (function initMatrix() {
-  const canvas = document.getElementById('matrix-canvas');
+  const canvas = document.getElementById('hkRain');
   const ctx    = canvas.getContext('2d');
   const stage  = canvas.parentElement;
   const CHARS  = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホ0123456789ABCDEF!@#$%'.split('');
@@ -140,40 +111,33 @@ let   inputEl  = null;
   setInterval(draw, 55);
 })();
 
-// =============================================================================
-// Status bar metrics
-// =============================================================================
+// ── Status bar ────────────────────────────────────────────────────────────────
 (function initMetrics() {
-  const sbCpu    = document.getElementById('sb-cpu');
-  const sbMem    = document.getElementById('sb-mem');
-  const sbPing   = document.getElementById('sb-ping');
-  const sbIp     = document.getElementById('sb-ip');
-  const sbStatus = document.getElementById('sb-status');
+  const elCpu  = document.getElementById('hkCpu');
+  const elMem  = document.getElementById('hkMem');
+  const elPing = document.getElementById('hkPing');
+  const elIp   = document.getElementById('hkIp');
+  const elStat = document.getElementById('hkStat');
 
-  sbIp.textContent = '10.' + rnd(0,50) + '.' + rnd(0,255) + '.' + rnd(1,254);
+  function rnd(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+
+  elIp.textContent = '10.' + rnd(0,50) + '.' + rnd(0,255) + '.' + rnd(1,254);
 
   function update() {
-    sbCpu.textContent  = (Math.random() * 35 + 4).toFixed(1);
-    sbMem.textContent  = (Math.random() * 25 + 38).toFixed(1);
-    sbPing.textContent = rnd(6, 48);
+    elCpu.textContent  = (Math.random() * 35 + 4).toFixed(1) + '%';
+    elMem.textContent  = (Math.random() * 25 + 38).toFixed(1) + '%';
+    elPing.textContent = rnd(6, 48) + 'ms';
   }
 
   update();
   setInterval(update, 900);
 
-  // Set status to ONLINE after boot
   setTimeout(() => {
-    sbStatus.textContent = 'ONLINE · query ok';
-    sbStatus.style.color = '#00ff00';
-    sbStatus.style.textShadow = '0 0 4px #00ff00';
+    elStat.innerHTML = '<b>STATUS:</b> <span style="color:#0f0;text-shadow:0 0 4px #0f0">ONLINE · query ok</span>';
   }, 4000);
-
-  function rnd(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
 })();
 
-// =============================================================================
-// Boot sequence
-// =============================================================================
+// ── Boot sequence ─────────────────────────────────────────────────────────────
 async function boot() {
   for (const line of BOOT_LINES) {
     await typeLog(line.t, line.c, line.d);
@@ -187,7 +151,7 @@ async function boot() {
 
 async function typeLog(text, cls, speed) {
   const div = document.createElement('div');
-  div.className = 'log-line ' + cls;
+  div.className = 'output-line ' + cls;
   termBody.appendChild(div);
   for (const ch of text) {
     div.textContent += ch;
@@ -197,25 +161,23 @@ async function typeLog(text, cls, speed) {
 }
 
 function showBanner() {
-  const pre = document.createElement('pre');
-  pre.className = 'ascii-banner';
+  const pre = document.createElement('span');
+  pre.className   = 'hk-asc';
   pre.textContent = ASCII_BANNER;
   termBody.appendChild(pre);
-  appendLine('authenticated as operator · access level: READ', 'log-ok');
-  appendLine('type "help" for available commands.', 'log-dim');
-  appendLine('', 'log-dim');
+  appendLine('authenticated as <b>operator</b> · access level: READ', '');
+  appendLine('type "help" for available commands.', 'hk-dim');
+  appendLine('', 'hk-dim');
   scrollBottom();
 }
 
-// =============================================================================
-// Prompt
-// =============================================================================
+// ── Prompt ────────────────────────────────────────────────────────────────────
 function showPrompt() {
-  const line   = document.createElement('div');
+  const line = document.createElement('div');
   line.className = 'prompt-line';
 
-  const sign   = document.createElement('span');
-  sign.className   = 'prompt-sign';
+  const sign = document.createElement('span');
+  sign.className   = 'hk-prompt';
   sign.textContent = 'root@kamus:~$';
 
   inputEl = document.createElement('input');
@@ -226,7 +188,7 @@ function showPrompt() {
   inputEl.addEventListener('keydown', onEnter);
 
   const cursor = document.createElement('span');
-  cursor.className = 'prompt-cursor';
+  cursor.className = 'hk-cur';
   inputEl.addEventListener('focus', () => { cursor.style.visibility = 'hidden'; });
   inputEl.addEventListener('blur',  () => { cursor.style.visibility = 'visible'; });
 
@@ -240,16 +202,14 @@ function showPrompt() {
   termBody.addEventListener('click', () => inputEl && inputEl.focus());
 }
 
-// =============================================================================
-// Key handler
-// =============================================================================
+// ── Key handler ───────────────────────────────────────────────────────────────
 async function onEnter(e) {
   if (e.key !== 'Enter') return;
   const raw = inputEl.value.trim();
   inputEl.value = '';
   if (!raw) return;
 
-  appendLine('root@kamus:~$ ' + raw, 'log-echo');
+  appendLine('root@kamus:~$ ' + raw, 'hk-echo');
   inputEl.closest('.prompt-line').remove();
   inputEl = null;
 
@@ -257,14 +217,12 @@ async function onEnter(e) {
   showPrompt();
 }
 
-// =============================================================================
-// Command dispatcher
-// =============================================================================
+// ── Command dispatcher ────────────────────────────────────────────────────────
 async function dispatch(raw) {
   const lower = raw.toLowerCase().trim();
 
   if (lower === 'help') {
-    appendLine(HELP_TEXT, 'log-dim');
+    appendLine(HELP_TEXT, 'hk-dim');
     return;
   }
 
@@ -277,28 +235,26 @@ async function dispatch(raw) {
   if (lower.startsWith('search ')) {
     const q = raw.substring(7).trim().substring(0, MAX_Q_LEN);
     if (q) { await runSearch(q); }
-    else   { appendLine('[error] Usage: search <keyword>', 'log-error'); }
+    else   { appendLine('[error] Usage: search <keyword>', 'hk-err'); }
     return;
   }
 
   if (lower === 'search') {
-    appendLine('[error] Usage: search <keyword>', 'log-error');
-    appendLine('        Example: search resti wahyu utami', 'log-dim');
+    appendLine('[error] Usage: search <keyword>', 'hk-err');
+    appendLine('        Example: search resti wahyu utami', 'hk-dim');
     return;
   }
 
-  appendLine('[error] command not found: ' + esc(raw), 'log-error');
-  appendLine('        type "help" for available commands.', 'log-dim');
+  appendLine('[error] command not found: ' + esc(raw), 'hk-err');
+  appendLine('        type "help" for available commands.', 'hk-dim');
 }
 
-// =============================================================================
-// Search
-// =============================================================================
+// ── Search ────────────────────────────────────────────────────────────────────
 async function runSearch(q) {
-  appendLine('', 'log-dim');
-  appendLine('> query --keyword "' + esc(q) + '"', 'log-sys');
+  appendLine('', 'hk-dim');
+  appendLine('> query --keyword "' + esc(q) + '"', 'hk-sys');
   await pause(100);
-  appendLine('> scanning rows ...', 'log-sys');
+  appendLine('> scanning rows ...', 'hk-sys');
 
   const url = API_URL
     + '?token=' + encodeURIComponent(API_TOKEN)
@@ -311,29 +267,27 @@ async function runSearch(q) {
     const json = await res.json();
 
     if (json.error) {
-      appendLine('[error] API: ' + esc(json.message || json.error), 'log-error');
+      appendLine('[error] API: ' + esc(json.message || json.error), 'hk-err');
       return;
     }
 
     if (json.count === 0) {
-      appendLine('> scanning ' + (json.total || '?') + ' rows ... matched 0', 'log-dim');
-      appendLine('[warn] no records found for: "' + esc(q) + '"', 'log-warn');
+      appendLine('> scanning ' + (json.total || '?') + ' rows ... matched 0', 'hk-dim');
+      appendLine('[warn] no records found for: "' + esc(q) + '"', 'hk-warn');
       return;
     }
 
-    appendLine('> scanning ' + (json.total || '?') + ' rows ... matched ' + json.count, 'log-dim');
-    appendLine('[ok] ' + json.count + ' record(s) found.', 'log-ok');
+    appendLine('> scanning ' + (json.total || '?') + ' rows ... matched ' + json.count, 'hk-dim');
+    appendLine('[ok] ' + json.count + ' record(s) found.', '');
     renderTable(json.data, q);
 
   } catch (err) {
-    appendLine('[error] failed to reach API: ' + esc(err.message), 'log-error');
-    appendLine('[error] check API_URL or redeploy Apps Script.', 'log-error');
+    appendLine('[error] failed to reach API: ' + esc(err.message), 'hk-err');
+    appendLine('[error] check API_URL or redeploy Apps Script.', 'hk-err');
   }
 }
 
-// =============================================================================
-// Table — textContent only (XSS safe)
-// =============================================================================
+// ── Table (textContent only — XSS safe) ──────────────────────────────────────
 function renderTable(rows, query) {
   if (!rows.length) return;
 
@@ -344,9 +298,8 @@ function renderTable(rows, query) {
   wrap.className = 'result-wrap';
 
   const table = document.createElement('table');
-  table.className = 'result-table';
+  table.className = 'hk-tbl';
 
-  // thead
   const thead = table.createTHead();
   const hrow  = thead.insertRow();
   headers.forEach(h => {
@@ -355,24 +308,22 @@ function renderTable(rows, query) {
     hrow.appendChild(th);
   });
 
-  // tbody
   const tbody = table.createTBody();
   rows.forEach(row => {
     const tr      = tbody.insertRow();
     const isMatch = headers.some(h => String(row[h] ?? '').toLowerCase().includes(q));
-    if (isMatch) tr.classList.add('match-row');
+    if (isMatch) tr.classList.add('hk-hit');
     headers.forEach(h => {
       const td = tr.insertCell();
       td.textContent = row[h] !== undefined ? String(row[h]) : '';
     });
   });
 
-  // tfoot
   const tfoot = table.createTFoot();
   const frow  = tfoot.insertRow();
   const ftd   = frow.insertCell();
-  ftd.colSpan   = headers.length;
-  ftd.className = 'result-count';
+  ftd.colSpan     = headers.length;
+  ftd.className   = 'result-count';
   ftd.textContent = rows.length + ' rows returned';
 
   wrap.appendChild(table);
@@ -380,13 +331,11 @@ function renderTable(rows, query) {
   scrollBottom();
 }
 
-// =============================================================================
-// Utilities
-// =============================================================================
+// ── Utilities ─────────────────────────────────────────────────────────────────
 function appendLine(text, cls) {
   const div = document.createElement('div');
-  div.className   = 'log-line ' + (cls || 'log-ok');
-  div.textContent = text;
+  div.className = 'output-line ' + (cls || '');
+  div.innerHTML = text;
   termBody.appendChild(div);
   scrollBottom();
 }
@@ -397,9 +346,6 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// =============================================================================
-// Start
-// =============================================================================
 boot();
 </script>
 </body>
