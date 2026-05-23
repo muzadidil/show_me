@@ -189,16 +189,18 @@ inputField.addEventListener('keydown', async function (e) {
         if (cmdLower === 'help') {
             const helpText = `
 == ZASHA TERMINAL v5.0 — Command List ==
-- ls         : List file di direktori aktif
-- dirs       : List semua direktori
-- cd <dir>   : Pindah direktori
-- add <key>  : Buat catatan baru
-- edit <key> : Edit catatan
-- rm <key>   : Hapus catatan
-- mkcmd <n>  : Buat custom command
-- rmcmd <n>  : Hapus custom command
-- syscmds    : List custom command
-- clear      : Bersihkan layar
+- ls              : List file di direktori aktif
+- dirs            : List semua direktori
+- cd <dir>        : Pindah direktori
+- add <key>       : Buat catatan baru
+- edit <key>      : Edit catatan
+- rm <key>        : Hapus catatan
+- mkcmd <n>       : Buat custom command
+- rmcmd <n>       : Hapus custom command
+- syscmds         : List custom command
+- clear           : Bersihkan layar
+- goto <halaman>  : Pindah ke halaman lain
+  Tersedia: todo | notes | excel
             `;
             appendHistory(helpText.trim(), 'system-msg');
             return;
@@ -253,6 +255,15 @@ inputField.addEventListener('keydown', async function (e) {
             if (confirm(`Hapus program '${keyword}'?`)) {
                 await fetchAPI({ action: 'delete', cmd: keyword, kategori: 'system_bin' });
                 delete customCommands[keyword];
+            }
+            return;
+        } else if (cmdLower.startsWith('goto ')) {
+            const pages = { todo: 'todo.html', notes: 'notes.html', excel: 'excel.html', kamus: 'index.html' };
+            const target = cmdLower.substring(5).trim();
+            if (pages[target]) {
+                window.location.href = pages[target];
+            } else {
+                appendHistory(`[ERROR] Halaman '${target}' tidak ada. Tersedia: todo, notes, excel, kamus`, 'error-msg');
             }
             return;
         }
