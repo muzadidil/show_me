@@ -26,6 +26,14 @@ const cmdInput    = document.getElementById('cmd-input');
 const cmdHint     = document.getElementById('cmd-hint');
 const btnSave     = document.getElementById('btn-save');
 const btnDel      = document.getElementById('btn-del');
+const clockEl     = document.getElementById('excel-clock');
+
+function updateClock() {
+    const now = new Date();
+    clockEl.textContent = now.toLocaleTimeString('id-ID', { hour12: false });
+}
+setInterval(updateClock, 1000);
+updateClock();
 
 // State
 let allTables       = [];
